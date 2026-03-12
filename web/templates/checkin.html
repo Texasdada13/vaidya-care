@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Check-In — Vaidya Care</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f8f4f0; color: #1a0a00; min-height: 100vh; }
+        .header { background: #1a3a2a; color: white; padding: 1.25rem 1.5rem; text-align: center; }
+        .header h1 { font-size: 1.25rem; font-weight: 700; }
+        .header p { font-size: 0.85rem; opacity: 0.8; margin-top: 0.2rem; }
+        .container { max-width: 600px; margin: 0 auto; padding: 1.5rem; }
+        .greeting { background: white; border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; border-left: 4px solid #16a34a; }
+        .greeting h2 { font-size: 1.1rem; font-weight: 600; color: #15803d; }
+        .greeting p { font-size: 0.88rem; color: #374151; margin-top: 0.35rem; }
+        .section { background: white; border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; }
+        .section-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 0.85rem; }
+        .check-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0; border-bottom: 1px solid #f3f4f6; }
+        .check-item:last-child { border-bottom: none; }
+        .check-item input[type=checkbox] { width: 20px; height: 20px; accent-color: #16a34a; cursor: pointer; flex-shrink: 0; }
+        .check-item label { font-size: 0.9rem; cursor: pointer; line-height: 1.4; }
+        .rating-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.55rem 0; border-bottom: 1px solid #f3f4f6; }
+        .rating-row:last-child { border-bottom: none; }
+        .rating-label { flex: 1; font-size: 0.9rem; }
+        .stars { display: flex; gap: 4px; }
+        .stars input { display: none; }
+        .stars label { font-size: 1.4rem; cursor: pointer; color: #d1d5db; transition: color 0.1s; }
+        .stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color: #f59e0b; }
+        .stars { display: flex; flex-direction: row-reverse; }
+        .stars label:hover, .stars label:hover ~ label, .stars input:checked ~ label { color: #f59e0b; }
+        textarea { width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem; font-size: 0.9rem; resize: vertical; outline: none; font-family: inherit; }
+        textarea:focus { border-color: #16a34a; box-shadow: 0 0 0 3px rgba(22,163,74,0.1); }
+        .btn-submit { width: 100%; padding: 1rem; background: #16a34a; color: white; border: none; border-radius: 12px; font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 0.5rem; }
+        .btn-submit:hover { background: #15803d; }
+        .already-done { text-align: center; padding: 3rem 1rem; }
+        .already-done i { font-size: 3rem; color: #16a34a; display: block; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Daily Check-In</h1>
+        <p>{{ patient.full_name }} &middot; {{ now().strftime('%A, %B %d') }}</p>
+    </div>
+
+    <div class="container">
+        {% if already_submitted %}
+        <div class="already-done">
+            <i class="bi bi-check-circle-fill"></i>
+            <h2 style="font-size:1.3rem;font-weight:700;margin-bottom:0.5rem;">Already submitted today!</h2>
+            <p style="color:#6b7280;">You've already completed your check-in for today. See you tomorrow!</p>
+        </div>
+        {% else %}
+        <div class="greeting">
+            <h2>Namaste, {{ patient.first_name }}!</h2>
+            <p>Take a moment to log today's habits and how you're feeling. This helps your practitioner track your progress.</p>
+        </div>
+
+        <form method="POST">
+            <!-- Morning -->
+            <div class="section">
+                <div class="section-title">🌅 Morning Routine</div>
+                <div class="check-item"><input type="checkbox" name="warm_water" id="ww"><label for="ww">Drank 1 cup of warm water upon waking</label></div>
+                <div class="check-item"><input type="checkbox" name="breathing_exercise" id="be"><label for="be">Breathing exercise (4s inhale / 6s exhale, 5–10 min)</label></div>
+                <div class="check-item"><input type="checkbox" name="nasal_oil" id="no"><label for="no">Nasal oil (2 drops sesame oil or ghee in each nostril)</label></div>
+            </div>
+
+            <!-- Meals -->
+            <div class="section">
+                <div class="section-title">🍲 Meals</div>
+                <div class="check-item"><input type="checkbox" name="warm_breakfast" id="wb"><label for="wb">Ate warm breakfast</label></div>
+                <div class="check-item"><input type="checkbox" name="avoided_cold_food" id="acf"><label for="acf">Avoided cold / refrigerated foods</label></div>
+                <div class="check-item"><input type="checkbox" name="avoided_yogurt" id="ay"><label for="ay">Avoided yogurt and fermented foods</label></div>
+                <div class="check-item"><input type="checkbox" name="herbal_tea_am" id="ht"><label for="ht">Drank herbal tea (Tulsi / Licorice / Coriander-Barley)</label></div>
+                <div class="check-item"><input type="checkbox" name="warm_lunch" id="wl"><label for="wl">Warm, freshly cooked lunch</label></div>
+                <div class="check-item"><input type="checkbox" name="included_barley" id="ib"><label for="ib">Included barley or small portion of rice</label></div>
+                <div class="check-item"><input type="checkbox" name="no_cold_drinks" id="ncd"><label for="ncd">No cold beverages during meals</label></div>
+                <div class="check-item"><input type="checkbox" name="warm_dinner" id="wd"><label for="wd">Light, warm dinner</label></div>
+                <div class="check-item"><input type="checkbox" name="dinner_before_8pm" id="d8"><label for="d8">Finished dinner before 8pm</label></div>
+            </div>
+
+            <!-- Supplements -->
+            <div class="section">
+                <div class="section-title">💊 Supplements</div>
+                <div class="check-item"><input type="checkbox" name="supplements_am" id="sam"><label for="sam">Morning supplements taken (before &amp; after breakfast)</label></div>
+                <div class="check-item"><input type="checkbox" name="supplements_pm" id="spm"><label for="spm">Evening supplements taken (before &amp; after dinner)</label></div>
+            </div>
+
+            <!-- Lifestyle -->
+            <div class="section">
+                <div class="section-title">🏃 Lifestyle</div>
+                <div class="check-item"><input type="checkbox" name="cardio_today" id="ct"><label for="ct">Cardiovascular activity (brisk walk, light jog)</label></div>
+                <div class="check-item"><input type="checkbox" name="consistent_sleep" id="cs"><label for="cs">Consistent sleep schedule maintained</label></div>
+            </div>
+
+            <!-- Symptom Ratings -->
+            <div class="section">
+                <div class="section-title">📊 How are you feeling today? (1 = poor, 5 = great)</div>
+                {% for field, label in [('digestion_score','Digestion'),('urinary_score','Urinary Comfort'),('sinus_score','Sinus / Breathing'),('energy_score','Energy Level')] %}
+                <div class="rating-row">
+                    <div class="rating-label">{{ label }}</div>
+                    <div class="stars">
+                        {% for i in [5,4,3,2,1] %}
+                        <input type="radio" name="{{ field }}" id="{{ field }}_{{ i }}" value="{{ i }}">
+                        <label for="{{ field }}_{{ i }}">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Notes -->
+            <div class="section">
+                <div class="section-title">📝 Notes (optional)</div>
+                <textarea name="notes" rows="3" placeholder="Any symptoms, observations, or questions for your practitioner..."></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">Submit Today's Check-In ✓</button>
+        </form>
+        {% endif %}
+    </div>
+</body>
+</html>

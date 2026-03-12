@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Vaidya Care{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.1rem;">
+            {{ now().strftime('%A, %B %d, %Y') }}
+        </p>
+        <h1>
+            {% set hour = now().hour %}
+            {% if hour < 12 %}Good morning{% elif hour < 17 %}Good afternoon{% else %}Good evening{% endif %},
+            {{ current_user.name.split()[0] }}
+        </h1>
+    </div>
+</div>
+
+<!-- KPI Row -->
+<div class="kpi-grid" style="grid-template-columns: repeat(4,1fr); margin-bottom: 1.5rem;">
+    <div class="card kpi-card">
+        <div class="kpi-label">Total Patients</div>
+        <div class="kpi-value">{{ total_patients }}</div>
+        <div class="kpi-sub">Active</div>
+    </div>
+    <div class="card kpi-card">
+        <div class="kpi-label">Active Plans</div>
+        <div class="kpi-value">{{ active_plans }}</div>
+        <div class="kpi-sub">Protocols running</div>
+    </div>
+    <div class="card kpi-card">
+        <div class="kpi-label">Follow-Ups Due</div>
+        <div class="kpi-value" style="color:{% if followups_due %}var(--danger){% else %}var(--success){% endif %}">
+            {{ followups_due|length }}
+        </div>
+        <div class="kpi-sub">Today &amp; overdue</div>
+    </div>
+    <div class="card kpi-card">
+        <div class="kpi-label">Pending Check-Ins</div>
+        <div class="kpi-value" style="color:{% if patients_due_checkin > 0 %}var(--warning){% else %}var(--success){% endif %}">
+            {{ patients_due_checkin }}
+        </div>
+        <div class="kpi-sub">Haven't logged today</div>
+    </div>
+</div>
+
+<div class="dash-main-grid">
+    <!-- Left: Follow-Ups + Recent Check-Ins -->
+    <div>
+        <!-- Follow-Ups Due -->
+        <div class="card" style="margin-bottom:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h2 style="font-size:1rem;font-weight:600;">Follow-Ups Due</h2>
+                <a href="{{ url_for('followups') }}" style="font-size:0.82rem;color:var(--primary);text-decoration:none;">View All →</a>
+            </div>
+            {% if followups_due %}
+                {% for fu in followups_due %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.65rem 0;border-bottom:1px solid var(--border);">
+                    <div>
+                        <a href="{{ url_for('patient_detail', patient_id=fu.patient_id) }}" style="font-weight:500;text-decoration:none;color:var(--text-primary);">
+                            {{ fu.patient.full_name }}
+                        </a>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);">{{ fu.reason or 'Follow-up' }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="font-size:0.78rem;color:{% if fu.scheduled_date < today %}var(--danger){% else %}var(--text-secondary){% endif %};">
+                            {% if fu.scheduled_date < today %}Overdue{% else %}Today{% endif %}
+                        </span>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align:center;padding:2rem;color:var(--text-secondary);">
+                    <i class="bi bi-check-circle" style="font-size:2rem;color:var(--success);display:block;margin-bottom:0.5rem;"></i>
+                    All caught up!
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Recent Check-Ins -->
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h2 style="font-size:1rem;font-weight:600;">Recent Check-Ins</h2>
+                <span style="font-size:0.82rem;color:var(--text-secondary);">Last 7 days</span>
+            </div>
+            {% if recent_checkins %}
+                {% for ci in recent_checkins %}
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border);">
+                    <div>
+                        <a href="{{ url_for('patient_detail', patient_id=ci.patient_id) }}" style="font-weight:500;text-decoration:none;color:var(--text-primary);">
+                            {{ ci.patient.full_name }}
+                        </a>
+                        <div style="font-size:0.8rem;color:var(--text-secondary);">{{ ci.date.strftime('%b %d') }}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.85rem;font-weight:600;color:{% if ci.habit_completion_pct >= 70 %}var(--success){% elif ci.habit_completion_pct >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
+                            {{ ci.habit_completion_pct }}%
+                        </div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">habits</div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align:center;padding:2rem;color:var(--text-secondary);">
+                    No check-ins yet this week.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Right: Quick Actions -->
+    <div>
+        <div class="card" style="margin-bottom:1.5rem;">
+            <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Quick Actions</h2>
+            <div style="display:flex;flex-direction:column;gap:0.65rem;">
+                <a href="{{ url_for('patient_new') }}" class="btn btn-primary" style="text-align:center;">
+                    <i class="bi bi-person-plus"></i> New Patient
+                </a>
+                <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary" style="text-align:center;">
+                    <i class="bi bi-people"></i> View All Patients
+                </a>
+                <a href="{{ url_for('followups') }}" class="btn btn-outline-secondary" style="text-align:center;">
+                    <i class="bi bi-calendar-check"></i> Manage Follow-Ups
+                </a>
+            </div>
+        </div>
+
+        <div class="card" style="background:linear-gradient(135deg,#f0fdf4,#dcfce7);border:1px solid #86efac;">
+            <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.75rem;">
+                <i class="bi bi-lightbulb-fill" style="font-size:1.4rem;color:#16a34a;"></i>
+                <h2 style="font-size:0.95rem;font-weight:600;color:#15803d;">Ayurvedic Insight</h2>
+            </div>
+            <p style="font-size:0.85rem;color:#166534;line-height:1.5;">
+                Use the AI Assistant on the left to review patient trends, prepare for consultations, or ask about Ayurvedic protocols.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

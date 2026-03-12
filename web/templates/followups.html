@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Follow-Ups — Vaidya Care{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Follow-Ups</h1>
+</div>
+
+<div class="card" style="margin-bottom:1.5rem;">
+    <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Upcoming &amp; Overdue ({{ upcoming|length }})</h2>
+    {% if upcoming %}
+    <table class="data-table">
+        <thead><tr><th>Patient</th><th>Date</th><th>Reason</th><th>Action</th></tr></thead>
+        <tbody>
+        {% for fu in upcoming %}
+        <tr>
+            <td><a href="{{ url_for('patient_detail', patient_id=fu.patient_id) }}">{{ fu.patient.full_name }}</a></td>
+            <td style="{% if fu.scheduled_date < today %}color:var(--danger);font-weight:600;{% endif %}">
+                {{ fu.scheduled_date.strftime('%b %d, %Y') }}
+                {% if fu.scheduled_date < today %}<span class="badge badge-danger" style="margin-left:4px;">Overdue</span>{% endif %}
+            </td>
+            <td style="color:var(--text-secondary);font-size:0.85rem;">{{ fu.reason or '—' }}</td>
+            <td>
+                <button onclick="completeFollowUp({{ fu.id }})" class="btn btn-sm btn-success">Mark Done</button>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-secondary);text-align:center;padding:1.5rem;">No upcoming follow-ups.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Recently Completed</h2>
+    {% if completed %}
+    <table class="data-table">
+        <thead><tr><th>Patient</th><th>Scheduled</th><th>Completed</th><th>Notes</th></tr></thead>
+        <tbody>
+        {% for fu in completed %}
+        <tr>
+            <td><a href="{{ url_for('patient_detail', patient_id=fu.patient_id) }}">{{ fu.patient.full_name }}</a></td>
+            <td style="color:var(--text-secondary);font-size:0.85rem;">{{ fu.scheduled_date.strftime('%b %d') }}</td>
+            <td style="color:var(--success);font-size:0.85rem;">{{ fu.completed_at.strftime('%b %d') if fu.completed_at else '—' }}</td>
+            <td style="color:var(--text-secondary);font-size:0.85rem;">{{ fu.notes or '—' }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color:var(--text-secondary);text-align:center;padding:1.5rem;">No completed follow-ups yet.</p>
+    {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function completeFollowUp(id) {
+    fetch(`/api/followups/${id}/complete`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({})})
+        .then(r => r.json()).then(() => location.reload());
+}
+</script>
+{% endblock %}

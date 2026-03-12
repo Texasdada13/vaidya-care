@@ -1,0 +1,47 @@
+<nav class="sidebar">
+    <div class="sidebar-header">
+        <a href="{{ url_for('dashboard') }}" class="sidebar-brand">
+            <div class="logo" style="width:32px;height:32px;background:var(--primary);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;">
+                <i class="bi bi-flower1"></i>
+            </div>
+            <h1>Vaidya Care</h1>
+        </a>
+    </div>
+
+    <div style="padding: 0.75rem 1rem;">
+        <a href="{{ url_for('patient_new') }}" class="btn-create-sidebar">
+            <i class="bi bi-plus-lg"></i> New Patient
+        </a>
+    </div>
+
+    <div class="sidebar-nav">
+        <a href="{{ url_for('dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-house"></i><span>Home</span>
+        </a>
+        <a href="{{ url_for('patients') }}" class="nav-link {% if active_page == 'patients' %}active{% endif %}">
+            <i class="bi bi-people"></i><span>Patients</span>
+        </a>
+        <a href="{{ url_for('followups') }}" class="nav-link {% if active_page == 'followups' %}active{% endif %}">
+            <i class="bi bi-calendar-check"></i><span>Follow-Ups</span>
+        </a>
+        <a href="{{ url_for('recipes') }}" class="nav-link {% if active_page == 'recipes' %}active{% endif %}">
+            <i class="bi bi-journal-richtext"></i><span>Recipes</span>
+        </a>
+        <a href="{{ url_for('supplements_page') }}" class="nav-link {% if active_page == 'supplements' %}active{% endif %}">
+            <i class="bi bi-capsule"></i><span>Supplements</span>
+        </a>
+
+        <div class="sidebar-section-label">MORE</div>
+        <a href="{{ url_for('logout') }}" class="nav-link">
+            <i class="bi bi-box-arrow-left"></i><span>Logout</span>
+        </a>
+    </div>
+
+    <div class="sidebar-footer">
+        <div class="user-avatar"><i class="bi bi-person-fill"></i></div>
+        <div>
+            <div class="user-name">{{ current_user.name }}</div>
+            <a href="{{ url_for('logout') }}" class="user-logout">Logout</a>
+        </div>
+    </div>
+</nav>

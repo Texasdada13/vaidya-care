@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}{{ patient.full_name }} — Vaidya Care{% endblock %}
+{% block content %}
+{% if checkin_token %}
+<script>const PATIENT_ID = {{ patient.id }};</script>
+{% endif %}
+
+<div class="page-header">
+    <div>
+        <a href="{{ url_for('patients') }}" style="font-size:0.82rem;color:var(--text-secondary);text-decoration:none;">← Patients</a>
+        <h1>{{ patient.full_name }}</h1>
+        <p>{{ patient.location or '' }}{% if patient.occupation %} &middot; {{ patient.occupation }}{% endif %}</p>
+    </div>
+    <div style="display:flex;gap:0.75rem;">
+        {% if checkin_token %}
+        <button onclick="copyCheckinLink('{{ request.host_url }}checkin/{{ checkin_token.token }}')" class="btn btn-outline-secondary">
+            <i class="bi bi-link-45deg"></i> Copy Check-In Link
+        </button>
+        {% endif %}
+        <button onclick="document.getElementById('fuModal').style.display='flex'" class="btn btn-primary">
+            <i class="bi bi-calendar-plus"></i> Schedule Follow-Up
+        </button>
+    </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:1.5rem;">
+    <!-- Main Column -->
+    <div>
+        <!-- Health Profile -->
+        {% if profile %}
+        <div class="card" style="margin-bottom:1rem;">
+            <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Health Profile</h2>
+            {% if profile.chief_complaints %}
+            <div style="margin-bottom:0.75rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">CHIEF COMPLAINTS</div>
+                <p style="font-size:0.88rem;white-space:pre-line;">{{ profile.chief_complaints }}</p>
+            </div>
+            {% endif %}
+            {% if profile.dosha_imbalances %}
+            <div style="margin-bottom:0.75rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">AYURVEDIC OBSERVATIONS</div>
+                <p style="font-size:0.88rem;white-space:pre-line;">{{ profile.dosha_imbalances }}</p>
+            </div>
+            {% endif %}
+            {% if profile.cholesterol_total or profile.hdl %}
+            <div style="margin-top:0.75rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.5rem;">LAB VALUES</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;">
+                    {% for label, val in [('Cholesterol',profile.cholesterol_total),('HDL',profile.hdl),('LDL',profile.ldl),('HbA1c',profile.hba1c),('Creatinine',profile.creatinine),('eGFR',profile.egfr),('Testosterone',profile.testosterone),('TSH',profile.tsh)] %}
+                    {% if val %}
+                    <div style="background:#f8fafc;border-radius:8px;padding:0.5rem;text-align:center;">
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">{{ label }}</div>
+                        <div style="font-weight:600;font-size:0.95rem;">{{ val }}</div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Recent Check-Ins -->
+        <div class="card">
+            <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">
+                Recent Check-Ins
+            </h2>
+            {% if recent_checkins %}
+            <table class="data-table">
+                <thead><tr><th>Date</th><th>Habits</th><th>Digestion</th><th>Urinary</th><th>Sinus</th><th>Energy</th><th>Notes</th></tr></thead>
+                <tbody>
+                {% for ci in recent_checkins %}
+                <tr>
+                    <td style="font-size:0.85rem;">{{ ci.date.strftime('%b %d') }}</td>
+                    <td>
+                        <span style="font-weight:600;color:{% if ci.habit_completion_pct >= 70 %}var(--success){% elif ci.habit_completion_pct >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
+                            {{ ci.habit_completion_pct }}%
+                        </span>
+                    </td>
+                    {% for score in [ci.digestion_score, ci.urinary_score, ci.sinus_score, ci.energy_score] %}
+                    <td style="font-size:0.85rem;{% if score and score <= 2 %}color:var(--danger);{% elif score and score >= 4 %}color:var(--success);{% endif %}">
+                        {{ score ~ '/5' if score else '—' }}
+                    </td>
+                    {% endfor %}
+                    <td style="font-size:0.8rem;color:var(--text-secondary);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ ci.notes or '' }}">
+                        {{ ci.notes or '—' }}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="text-align:center;color:var(--text-secondary);padding:1.5rem;">No check-ins yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div>
+        <!-- Active Plan -->
+        <div class="card" style="margin-bottom:1rem;">
+            <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:0.75rem;">Current Plan</h2>
+            {% if active_plan %}
+            <div style="font-weight:500;margin-bottom:0.35rem;">{{ active_plan.title }}</div>
+            {% if active_plan.start_date %}
+            <div style="font-size:0.82rem;color:var(--text-secondary);">Started {{ active_plan.start_date.strftime('%b %d, %Y') }}</div>
+            {% endif %}
+            {% if active_plan.foods_to_avoid %}
+            <div style="margin-top:0.75rem;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--danger);margin-bottom:0.2rem;">AVOID</div>
+                <p style="font-size:0.82rem;white-space:pre-line;">{{ active_plan.foods_to_avoid }}</p>
+            </div>
+            {% endif %}
+            {% if active_plan.lifestyle_notes %}
+            <div style="margin-top:0.75rem;">
+                <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">LIFESTYLE</div>
+                <p style="font-size:0.82rem;white-space:pre-line;">{{ active_plan.lifestyle_notes }}</p>
+            </div>
+            {% endif %}
+            {% else %}
+            <p style="font-size:0.85rem;color:var(--text-secondary);">No active plan.</p>
+            {% endif %}
+        </div>
+
+        <!-- Check-In Link -->
+        {% if checkin_token %}
+        <div class="card" style="margin-bottom:1rem;background:var(--primary-light);border:1px solid #bfdbfe;">
+            <h2 style="font-size:0.9rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;">
+                <i class="bi bi-link-45deg"></i> Check-In Link
+            </h2>
+            <p style="font-size:0.8rem;color:var(--primary);margin-bottom:0.75rem;">Share this link with {{ patient.first_name }} for daily logging.</p>
+            <div style="display:flex;gap:0.5rem;">
+                <input type="text" value="{{ request.host_url }}checkin/{{ checkin_token.token }}"
+                    id="checkinUrl" readonly style="flex:1;font-size:0.75rem;padding:0.4rem;border:1px solid #93c5fd;border-radius:6px;background:white;">
+                <button onclick="copyCheckinLink(document.getElementById('checkinUrl').value)"
+                    class="btn btn-primary" style="padding:0.4rem 0.75rem;font-size:0.8rem;">Copy</button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Follow-Ups -->
+        <div class="card">
+            <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:0.75rem;">Follow-Ups</h2>
+            {% for fu in followups %}
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--border);">
+                <div>
+                    <div style="font-size:0.85rem;{% if not fu.completed and fu.scheduled_date < today() %}color:var(--danger);font-weight:600;{% endif %}">
+                        {{ fu.scheduled_date.strftime('%b %d, %Y') }}
+                    </div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary);">{{ fu.reason or 'Follow-up' }}</div>
+                </div>
+                {% if fu.completed %}
+                <span class="badge badge-success">Done</span>
+                {% elif fu.scheduled_date < today() %}
+                <span class="badge badge-danger">Overdue</span>
+                {% else %}
+                <span class="badge" style="background:#f1f5f9;color:var(--text-secondary);">Upcoming</span>
+                {% endif %}
+            </div>
+            {% else %}
+            <p style="font-size:0.85rem;color:var(--text-secondary);">No follow-ups scheduled.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Follow-Up Modal -->
+<div id="fuModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:12px;padding:1.5rem;width:100%;max-width:400px;">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Schedule Follow-Up</h2>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label style="font-size:0.85rem;font-weight:500;display:block;margin-bottom:0.3rem;">Date</label>
+            <input type="date" id="fuDate" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+        </div>
+        <div class="form-group" style="margin-bottom:1rem;">
+            <label style="font-size:0.85rem;font-weight:500;display:block;margin-bottom:0.3rem;">Reason</label>
+            <input type="text" id="fuReason" placeholder="e.g. 2-week check-in" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+            <button onclick="document.getElementById('fuModal').style.display='none'" class="btn btn-outline-secondary">Cancel</button>
+            <button onclick="saveFollowUp()" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyCheckinLink(url) {
+    navigator.clipboard.writeText(url).then(() => alert('Check-in link copied to clipboard!'));
+}
+
+function saveFollowUp() {
+    const d = document.getElementById('fuDate').value;
+    const r = document.getElementById('fuReason').value;
+    if (!d) { alert('Please select a date.'); return; }
+    fetch('/api/followups', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({patient_id: {{ patient.id }}, scheduled_date: d, reason: r})
+    }).then(r => r.json()).then(() => location.reload());
+}
+</script>
+{% endblock %}

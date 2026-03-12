@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Recipes — Vaidya Care{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Recipe Library</h1></div>
+{% set meal_types = ['Breakfast','Lunch','Dinner','Tea','Snack'] %}
+{% for meal_type in meal_types %}
+{% set meal_recipes = recipes | selectattr('meal_type','equalto',meal_type) | list %}
+{% if meal_recipes %}
+<h2 style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin:1.25rem 0 0.75rem;">{{ meal_type }}</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1rem;">
+{% for r in meal_recipes %}
+<div class="card">
+    <div style="font-weight:600;margin-bottom:0.35rem;">{{ r.name }}</div>
+    {% if r.ingredients %}<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem;"><strong>Ingredients:</strong> {{ r.ingredients }}</p>{% endif %}
+    {% if r.instructions %}<p style="font-size:0.82rem;color:var(--text-secondary);">{{ r.instructions }}</p>{% endif %}
+</div>
+{% endfor %}
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}

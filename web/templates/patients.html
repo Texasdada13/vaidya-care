@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}Patients — Vaidya Care{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Patients</h1>
+        <p>{{ patients|length }} active patient{{ 's' if patients|length != 1 else '' }}</p>
+    </div>
+    <a href="{{ url_for('patient_new') }}" class="btn btn-primary">
+        <i class="bi bi-person-plus"></i> New Patient
+    </a>
+</div>
+
+<!-- Search -->
+<div style="margin-bottom:1rem;">
+    <input type="text" id="searchInput" placeholder="Search patients..." onkeyup="filterPatients()"
+        style="padding:0.6rem 1rem;border:1px solid var(--border);border-radius:8px;width:100%;max-width:360px;font-size:0.9rem;outline:none;">
+</div>
+
+<div class="card" style="padding:0;overflow:hidden;">
+    <table class="data-table" id="patientsTable">
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Location</th>
+                <th>Last Check-In</th>
+                <th>Next Follow-Up</th>
+                <th>Plan</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in patients %}
+            {% set p = row.patient %}
+            <tr onclick="window.location.href='{{ url_for('patient_detail', patient_id=p.id) }}'"
+                style="cursor:pointer;" data-searchable="{{ p.full_name }} {{ p.location or '' }}">
+                <td>
+                    <div style="font-weight:500;">{{ p.full_name }}</div>
+                    <div style="font-size:0.78rem;color:var(--text-secondary);">{{ p.email or p.phone or '—' }}</div>
+                </td>
+                <td style="color:var(--text-secondary);font-size:0.85rem;">{{ p.location or '—' }}</td>
+                <td>
+                    {% if row.last_checkin %}
+                        <div style="font-size:0.85rem;">{{ row.last_checkin.date.strftime('%b %d') }}</div>
+                        <div style="font-size:0.78rem;">
+                            <span style="color:{% if row.last_checkin.habit_completion_pct >= 70 %}var(--success){% elif row.last_checkin.habit_completion_pct >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
+                                {{ row.last_checkin.habit_completion_pct }}% habits
+                            </span>
+                        </div>
+                    {% else %}
+                        <span style="color:var(--text-secondary);font-size:0.82rem;">No check-ins</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.next_followup %}
+                        <span style="font-size:0.82rem;{% if row.next_followup.scheduled_date < today %}color:var(--danger);font-weight:600;{% endif %}">
+                            {{ row.next_followup.scheduled_date.strftime('%b %d') }}
+                        </span>
+                    {% else %}
+                        <span style="color:var(--text-secondary);font-size:0.82rem;">—</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.has_active_plan %}
+                        <span class="badge badge-success">Active</span>
+                    {% else %}
+                        <span class="badge" style="background:#f1f5f9;color:var(--text-secondary);">No plan</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align:center;padding:2.5rem;color:var(--text-secondary);">
+                    No patients yet. <a href="{{ url_for('patient_new') }}">Add your first patient →</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function filterPatients() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    document.querySelectorAll('#patientsTable tbody tr[data-searchable]').forEach(row => {
+        row.style.display = row.dataset.searchable.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Supplements — Vaidya Care{% endblock %}
+{% block content %}
+<div class="page-header"><h1>Supplement Library</h1></div>
+<div class="card" style="padding:0;overflow:hidden;">
+    <table class="data-table">
+        <thead><tr><th>Supplement</th><th>Brand</th><th>Category</th><th>Purpose</th></tr></thead>
+        <tbody>
+        {% for s in supplements %}
+        <tr>
+            <td style="font-weight:500;">{{ s.name }}</td>
+            <td style="color:var(--text-secondary);font-size:0.85rem;">{{ s.brand or '—' }}</td>
+            <td><span class="badge" style="background:var(--primary-light);color:var(--primary);">{{ s.category or '—' }}</span></td>
+            <td style="font-size:0.85rem;color:var(--text-secondary);">{{ s.purpose or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--text-secondary);">No supplements found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

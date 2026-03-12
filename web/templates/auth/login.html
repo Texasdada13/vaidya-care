@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login — Vaidya Care</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        body { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--content-bg); }
+        .login-card { background: white; border-radius: 16px; padding: 2.5rem; width: 100%; max-width: 400px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .login-logo { width: 56px; height: 56px; background: var(--primary); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: white; margin: 0 auto 1.25rem; }
+        .login-title { text-align: center; font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; }
+        .login-sub { text-align: center; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.75rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.35rem; }
+        .form-group input { width: 100%; padding: 0.65rem 0.9rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; }
+        .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+        .btn-login { width: 100%; padding: 0.75rem; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 0.5rem; }
+        .btn-login:hover { background: var(--primary-dark); }
+        .setup-link { text-align: center; margin-top: 1rem; font-size: 0.85rem; color: var(--text-secondary); }
+        .setup-link a { color: var(--primary); }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo"><i class="bi bi-flower1"></i></div>
+        <div class="login-title">Vaidya Care</div>
+        <div class="login-sub">Ayurvedic Practice Management</div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, msg in messages %}
+                <div class="flash flash-{{ category }}" style="margin-bottom:1rem;">{{ msg }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" name="email" placeholder="your@email.com" required autofocus>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="btn-login">Sign In</button>
+        </form>
+        <div class="setup-link">
+            First time? <a href="{{ url_for('setup') }}">Create your account</a>
+        </div>
+    </div>
+</body>
+</html>
