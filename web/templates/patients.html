@@ -53,7 +53,7 @@
                 </td>
                 <td>
                     {% if row.next_followup %}
-                        <span style="font-size:0.82rem;{% if row.next_followup.scheduled_date < today %}color:var(--danger);font-weight:600;{% endif %}">
+                        <span style="font-size:0.82rem;{% if row.next_followup.scheduled_date < today() %}color:var(--danger);font-weight:600;{% endif %}">
                             {{ row.next_followup.scheduled_date.strftime('%b %d') }}
                         </span>
                     {% else %}
