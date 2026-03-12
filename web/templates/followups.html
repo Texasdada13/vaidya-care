@@ -1,62 +1,199 @@
 {% extends 'base.html' %}
 {% block title %}Follow-Ups — Vaidya Care{% endblock %}
 {% block content %}
+
 <div class="page-header">
-    <h1>Follow-Ups</h1>
+    <div>
+        <h1>Follow-Ups</h1>
+        <p>{{ upcoming|length }} pending · {{ completed|length }} recently completed</p>
+    </div>
+    <button onclick="document.getElementById('scheduleModal').style.display='flex'" class="btn btn-primary">
+        <i class="bi bi-calendar-plus"></i> Schedule Follow-Up
+    </button>
 </div>
 
-<div class="card" style="margin-bottom:1.5rem;">
-    <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Upcoming &amp; Overdue ({{ upcoming|length }})</h2>
+<!-- C: Overdue alert banner -->
+{% if overdue_count > 0 %}
+<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:0.85rem 1.1rem;margin-bottom:1.25rem;display:flex;align-items:center;gap:0.75rem;">
+    <i class="bi bi-exclamation-triangle-fill" style="color:var(--danger);font-size:1.1rem;flex-shrink:0;"></i>
+    <div>
+        <span style="font-weight:600;color:var(--danger);">{{ overdue_count }} overdue follow-up{{ 's' if overdue_count != 1 else '' }}</span>
+        <span style="color:#991b1b;font-size:0.88rem;"> — these patients are past their scheduled date and need attention.</span>
+    </div>
+</div>
+{% endif %}
+
+<!-- Upcoming & Overdue -->
+<div class="card" style="margin-bottom:1.5rem;padding:0;overflow:hidden;">
+    <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+        <h2 style="font-size:1rem;font-weight:600;margin:0;">Upcoming &amp; Overdue</h2>
+        <span style="font-size:0.82rem;color:var(--text-secondary);">{{ upcoming|length }} total</span>
+    </div>
     {% if upcoming %}
     <table class="data-table">
-        <thead><tr><th>Patient</th><th>Date</th><th>Reason</th><th>Action</th></tr></thead>
+        <thead>
+            <tr><th>Patient</th><th>Date</th><th>Reason</th><th>Action</th></tr>
+        </thead>
         <tbody>
         {% for fu in upcoming %}
         <tr>
-            <td><a href="{{ url_for('patient_detail', patient_id=fu.patient_id) }}">{{ fu.patient.full_name }}</a></td>
-            <td style="{% if fu.scheduled_date < today %}color:var(--danger);font-weight:600;{% endif %}">
-                {{ fu.scheduled_date.strftime('%b %d, %Y') }}
-                {% if fu.scheduled_date < today %}<span class="badge badge-danger" style="margin-left:4px;">Overdue</span>{% endif %}
+            <td>
+                <a href="{{ url_for('patient_detail', patient_id=fu.patient_id) }}" style="font-weight:500;color:var(--text-primary);text-decoration:none;">
+                    {{ fu.patient.full_name }}
+                </a>
+            </td>
+            <td>
+                <span style="font-size:0.88rem;{% if fu.scheduled_date < today %}color:var(--danger);font-weight:600;{% endif %}">
+                    {{ fu.scheduled_date.strftime('%b %d, %Y') }}
+                </span>
+                {% if fu.scheduled_date < today %}
+                <span class="badge badge-danger" style="margin-left:6px;">Overdue</span>
+                {% elif fu.scheduled_date == today %}
+                <span class="badge" style="background:#fef3c7;color:#92400e;margin-left:6px;">Today</span>
+                {% endif %}
             </td>
             <td style="color:var(--text-secondary);font-size:0.85rem;">{{ fu.reason or '—' }}</td>
             <td>
-                <button onclick="completeFollowUp({{ fu.id }})" class="btn btn-sm btn-success">Mark Done</button>
+                <button onclick="openCompleteModal({{ fu.id }}, '{{ fu.patient.full_name|e }}')"
+                    class="btn btn-sm" style="background:var(--success-light);color:var(--success);border:1px solid #a7f3d0;">
+                    <i class="bi bi-check2"></i> Mark Done
+                </button>
             </td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p style="color:var(--text-secondary);text-align:center;padding:1.5rem;">No upcoming follow-ups.</p>
+    <p style="color:var(--text-secondary);text-align:center;padding:2rem;">
+        <i class="bi bi-calendar-check" style="font-size:1.5rem;display:block;margin-bottom:0.5rem;opacity:0.3;"></i>
+        No upcoming follow-ups.
+    </p>
     {% endif %}
 </div>
 
-<div class="card">
-    <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;">Recently Completed</h2>
+<!-- Recently Completed -->
+<div class="card" style="padding:0;overflow:hidden;">
+    <div style="padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+        <h2 style="font-size:1rem;font-weight:600;margin:0;">Recently Completed</h2>
+    </div>
     {% if completed %}
     <table class="data-table">
-        <thead><tr><th>Patient</th><th>Scheduled</th><th>Completed</th><th>Notes</th></tr></thead>
+        <thead>
+            <tr><th>Patient</th><th>Scheduled</th><th>Completed</th><th>Notes</th></tr>
+        </thead>
         <tbody>
         {% for fu in completed %}
         <tr>
-            <td><a href="{{ url_for('patient_detail', patient_id=fu.patient_id) }}">{{ fu.patient.full_name }}</a></td>
-            <td style="color:var(--text-secondary);font-size:0.85rem;">{{ fu.scheduled_date.strftime('%b %d') }}</td>
-            <td style="color:var(--success);font-size:0.85rem;">{{ fu.completed_at.strftime('%b %d') if fu.completed_at else '—' }}</td>
-            <td style="color:var(--text-secondary);font-size:0.85rem;">{{ fu.notes or '—' }}</td>
+            <td>
+                <a href="{{ url_for('patient_detail', patient_id=fu.patient_id) }}" style="font-weight:500;color:var(--text-primary);text-decoration:none;">
+                    {{ fu.patient.full_name }}
+                </a>
+            </td>
+            <td style="color:var(--text-secondary);font-size:0.85rem;">{{ fu.scheduled_date.strftime('%b %d, %Y') }}</td>
+            <td style="color:var(--success);font-size:0.85rem;">
+                <i class="bi bi-check-circle-fill"></i>
+                {{ fu.completed_at.strftime('%b %d, %Y') if fu.completed_at else '—' }}
+            </td>
+            <td style="color:var(--text-secondary);font-size:0.82rem;max-width:200px;">{{ fu.notes or '—' }}</td>
         </tr>
         {% endfor %}
         </tbody>
     </table>
     {% else %}
-    <p style="color:var(--text-secondary);text-align:center;padding:1.5rem;">No completed follow-ups yet.</p>
+    <p style="color:var(--text-secondary);text-align:center;padding:2rem;">No completed follow-ups yet.</p>
     {% endif %}
 </div>
+
+<!-- A: Schedule Follow-Up Modal -->
+<div id="scheduleModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:14px;padding:1.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:1.25rem;"><i class="bi bi-calendar-plus" style="color:var(--primary);margin-right:0.4rem;"></i>Schedule Follow-Up</h2>
+        <div class="form-group" style="margin-bottom:0.85rem;">
+            <label style="font-size:0.85rem;font-weight:500;display:block;margin-bottom:0.3rem;">Patient *</label>
+            <select id="sPatient" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;font-size:0.88rem;">
+                <option value="">Select patient…</option>
+                {% for p in patients %}
+                <option value="{{ p.id }}">{{ p.full_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0.85rem;">
+            <label style="font-size:0.85rem;font-weight:500;display:block;margin-bottom:0.3rem;">Date *</label>
+            <input type="date" id="sDate" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+        </div>
+        <div class="form-group" style="margin-bottom:1.25rem;">
+            <label style="font-size:0.85rem;font-weight:500;display:block;margin-bottom:0.3rem;">Reason</label>
+            <input type="text" id="sReason" placeholder="e.g. 2-week check-in, lab review…" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+            <button onclick="document.getElementById('scheduleModal').style.display='none'" class="btn btn-outline-secondary">Cancel</button>
+            <button onclick="saveSchedule()" class="btn btn-primary">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- D: Complete with Notes Modal -->
+<div id="completeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:14px;padding:1.5rem;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:0.35rem;"><i class="bi bi-check-circle" style="color:var(--success);margin-right:0.4rem;"></i>Mark Follow-Up Done</h2>
+        <p id="completePatientName" style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:1.1rem;"></p>
+        <div class="form-group" style="margin-bottom:1.25rem;">
+            <label style="font-size:0.85rem;font-weight:500;display:block;margin-bottom:0.3rem;">Completion Notes <span style="font-weight:400;color:var(--text-secondary);">(optional)</span></label>
+            <textarea id="completeNotes" rows="3" placeholder="What was discussed, outcome, next steps…"
+                style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;font-size:0.85rem;resize:vertical;"></textarea>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;">
+            <button onclick="document.getElementById('completeModal').style.display='none'" class="btn btn-outline-secondary">Cancel</button>
+            <button onclick="submitComplete()" class="btn btn-primary" style="background:var(--success);">
+                <i class="bi bi-check2"></i> Confirm Done
+            </button>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
+
 {% block scripts %}
 <script>
-function completeFollowUp(id) {
-    fetch(`/api/followups/${id}/complete`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({})})
-        .then(r => r.json()).then(() => location.reload());
+let pendingCompleteId = null;
+
+// A: Schedule
+function saveSchedule() {
+    const pid = document.getElementById('sPatient').value;
+    const dt  = document.getElementById('sDate').value;
+    const rsn = document.getElementById('sReason').value;
+    if (!pid) { alert('Please select a patient.'); return; }
+    if (!dt)  { alert('Please select a date.'); return; }
+    fetch('/api/followups', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({patient_id: parseInt(pid), scheduled_date: dt, reason: rsn})
+    }).then(r => r.json()).then(() => location.reload());
 }
+
+// D: Open complete modal
+function openCompleteModal(id, patientName) {
+    pendingCompleteId = id;
+    document.getElementById('completePatientName').textContent = patientName;
+    document.getElementById('completeNotes').value = '';
+    document.getElementById('completeModal').style.display = 'flex';
+}
+
+// D: Submit with notes
+function submitComplete() {
+    const notes = document.getElementById('completeNotes').value;
+    fetch(`/api/followups/${pendingCompleteId}/complete`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({notes: notes})
+    }).then(r => r.json()).then(() => location.reload());
+}
+
+// Close modals on backdrop click
+['scheduleModal','completeModal'].forEach(id => {
+    document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) this.style.display = 'none';
+    });
+});
 </script>
 {% endblock %}

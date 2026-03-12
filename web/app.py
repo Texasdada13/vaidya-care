@@ -276,10 +276,14 @@ def followups():
         .order_by(FollowUp.completed_at.desc())
         .limit(20)
         .all())
+    patients = Patient.query.filter_by(practitioner_id=current_user.id, active=True).order_by(Patient.first_name).all()
+    overdue = [fu for fu in upcoming if fu.scheduled_date < date.today()]
     return render_template('followups.html',
         active_page='followups',
         upcoming=upcoming,
         completed=completed,
+        patients=patients,
+        overdue_count=len(overdue),
         today=date.today(),
     )
 
