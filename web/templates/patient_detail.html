@@ -95,6 +95,52 @@
         </div>
         {% endif %}
 
+        <!-- Symptom Trend Chart -->
+        {% if chart_data|length >= 3 %}
+        <div class="card" style="margin-bottom:1rem;padding:1.25rem;">
+            <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Symptom Trends — Last {{ chart_data|length }} Days</h2>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:0.75rem;font-size:0.75rem;">
+                <span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:3px;background:#059669;display:inline-block;border-radius:2px;"></span>Digestion</span>
+                <span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:3px;background:#987654;display:inline-block;border-radius:2px;"></span>Energy</span>
+                <span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:3px;background:#14b8a6;display:inline-block;border-radius:2px;"></span>Urinary</span>
+                <span style="display:flex;align-items:center;gap:4px;"><span style="width:16px;height:3px;background:#f59e0b;display:inline-block;border-radius:2px;"></span>Sinus</span>
+            </div>
+            <svg id="trendChart" viewBox="0 0 600 160" style="width:100%;height:160px;" preserveAspectRatio="none">
+                <!-- Grid lines -->
+                {% for y in [1,2,3,4,5] %}
+                {% set ypos = 130 - ((y-1) * 27.5) %}
+                <line x1="40" x2="590" y1="{{ ypos }}" y2="{{ ypos }}" stroke="#e2e8f0" stroke-width="1"/>
+                <text x="34" y="{{ ypos + 4 }}" font-size="10" fill="#94a3b8" text-anchor="end">{{ y }}</text>
+                {% endfor %}
+
+                {% set n = chart_data|length %}
+                {% set step = 550 / ([n - 1, 1]|max) %}
+
+                <!-- Lines per metric -->
+                {% set metrics = [
+                    ('digestion', '#059669'),
+                    ('energy',    '#987654'),
+                    ('urinary',   '#14b8a6'),
+                    ('sinus',     '#f59e0b'),
+                ] %}
+                {% for metric, color in metrics %}
+                <polyline fill="none" stroke="{{ color }}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                    points="{% for i in range(n) %}{% if chart_data[i][metric] %}{{ (40 + i * step)|round(1) }},{{ (130 - (chart_data[i][metric] - 1) * 27.5)|round(1) }} {% endif %}{% endfor %}"/>
+                {% for i in range(n) %}{% if chart_data[i][metric] %}
+                <circle cx="{{ (40 + i * step)|round(1) }}" cy="{{ (130 - (chart_data[i][metric] - 1) * 27.5)|round(1) }}" r="3.5" fill="{{ color }}" stroke="white" stroke-width="1.5"/>
+                {% endif %}{% endfor %}
+                {% endfor %}
+
+                <!-- X axis date labels -->
+                {% for i in range(n) %}
+                {% if loop.first or loop.last or (n > 7 and loop.index0 % 2 == 0) or n <= 7 %}
+                <text x="{{ (40 + i * step)|round(1) }}" y="155" font-size="9" fill="#94a3b8" text-anchor="middle">{{ chart_data[i]['date'] }}</text>
+                {% endif %}
+                {% endfor %}
+            </svg>
+        </div>
+        {% endif %}
+
         <!-- Recent Check-Ins -->
         <div class="card">
             <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">

@@ -246,6 +246,17 @@ def patient_detail(patient_id):
         .all())
     token = patient.checkin_token
 
+    # Chart data: last 14 days in chronological order
+    chart_checkins = list(reversed(recent_checkins))
+    chart_data = [{
+        'date': ci.date.strftime('%b %d'),
+        'digestion': ci.digestion_score,
+        'energy':    ci.energy_score,
+        'urinary':   ci.urinary_score,
+        'sinus':     ci.sinus_score,
+        'habits':    ci.habit_completion_pct,
+    } for ci in chart_checkins]
+
     return render_template('patient_detail.html',
         active_page='patients',
         patient=patient,
@@ -254,6 +265,7 @@ def patient_detail(patient_id):
         recent_checkins=recent_checkins,
         followups=followups,
         checkin_token=token,
+        chart_data=chart_data,
     )
 
 
