@@ -10,7 +10,7 @@
         <h1>
             {% set hour = now().hour %}
             {% if hour < 12 %}Good morning{% elif hour < 17 %}Good afternoon{% else %}Good evening{% endif %},
-            {{ current_user.name.split()[0] }}
+            {{ current_user.name }}
         </h1>
     </div>
 </div>
