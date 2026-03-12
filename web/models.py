@@ -5,7 +5,7 @@ All models use SQLite via SQLAlchemy ORM.
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
-import uuid
+import secrets
 
 db = SQLAlchemy()
 
@@ -214,7 +214,7 @@ class CheckInToken(db.Model):
     __tablename__ = 'checkin_tokens'
     id         = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patients.id'), nullable=False)
-    token      = db.Column(db.String(64), unique=True, nullable=False, default=lambda: uuid.uuid4().hex)
+    token      = db.Column(db.String(128), unique=True, nullable=False, default=lambda: secrets.token_urlsafe(48))
     active     = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
