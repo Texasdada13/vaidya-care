@@ -257,6 +257,47 @@ def patient_detail(patient_id):
     )
 
 
+# ─── Patient Edit APIs ───────────────────────────────────────────────────────
+
+@app.route('/api/patients/<int:patient_id>/edit', methods=['POST'])
+@login_required
+def patient_edit(patient_id):
+    p = Patient.query.filter_by(id=patient_id, practitioner_id=current_user.id).first_or_404()
+    data = request.json
+    for field in ['first_name','last_name','email','phone','location','occupation','sex',
+                  'exercise_notes','diet_pattern','alcohol_notes','caffeine_notes',
+                  'sleep_notes','stress_level']:
+        if field in data:
+            setattr(p, field, data[field] or None)
+    if 'dob' in data and data['dob']:
+        try: p.dob = datetime.strptime(data['dob'], '%Y-%m-%d').date()
+        except ValueError: pass
+    db.session.commit()
+    return jsonify({'status': 'updated', 'full_name': p.full_name})
+
+
+@app.route('/api/patients/<int:patient_id>/profile', methods=['POST'])
+@login_required
+def patient_profile_edit(patient_id):
+    patient = Patient.query.filter_by(id=patient_id, practitioner_id=current_user.id).first_or_404()
+    hp = patient.health_profile
+    if not hp:
+        hp = HealthProfile(patient_id=patient_id)
+        db.session.add(hp)
+    data = request.json
+    for field in ['chief_complaints','medical_history','current_medications','allergies',
+                  'dosha_primary','dosha_secondary','dosha_imbalances',
+                  'agni_assessment','ama_assessment']:
+        if field in data:
+            setattr(hp, field, data[field] or None)
+    for field in ['cholesterol_total','hdl','ldl','hba1c','creatinine','egfr','testosterone','tsh']:
+        if field in data:
+            try: setattr(hp, field, float(data[field]) if data[field] else None)
+            except (ValueError, TypeError): pass
+    db.session.commit()
+    return jsonify({'status': 'updated'})
+
+
 # ─── Follow-Ups ──────────────────────────────────────────────────────────────
 
 @app.route('/followups')
