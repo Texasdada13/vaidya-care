@@ -205,14 +205,20 @@
 
         <!-- Check-In Link -->
         {% if checkin_token %}
-        <div class="card" style="margin-bottom:1rem;background:var(--primary-light);border:1px solid #bfdbfe;">
-            <h2 style="font-size:0.9rem;font-weight:700;color:var(--primary);margin-bottom:0.5rem;">
+        <div class="card" style="margin-bottom:1rem;background:var(--primary-light);border:1px solid rgba(152,118,84,0.3);">
+            <h2 style="font-size:0.9rem;font-weight:700;color:var(--primary-dark);margin-bottom:0.5rem;">
                 <i class="bi bi-link-45deg"></i> Check-In Link
             </h2>
-            <p style="font-size:0.8rem;color:var(--primary);margin-bottom:0.75rem;">Share this link with {{ patient.first_name }} for daily logging.</p>
+            <p style="font-size:0.8rem;color:var(--primary-dark);margin-bottom:0.75rem;">Share with {{ patient.first_name }} for daily logging.</p>
+            {% if qr_b64 %}
+            <div style="text-align:center;margin-bottom:0.75rem;">
+                <img src="data:image/png;base64,{{ qr_b64 }}" alt="QR Code" style="width:120px;height:120px;border-radius:8px;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
+                <div style="font-size:0.7rem;color:var(--primary-dark);margin-top:0.35rem;opacity:0.7;">Scan to check in</div>
+            </div>
+            {% endif %}
             <div style="display:flex;gap:0.5rem;">
                 <input type="text" value="{{ request.host_url }}checkin/{{ checkin_token.token }}"
-                    id="checkinUrl" readonly style="flex:1;font-size:0.75rem;padding:0.4rem;border:1px solid #93c5fd;border-radius:6px;background:white;">
+                    id="checkinUrl" readonly style="flex:1;font-size:0.72rem;padding:0.4rem;border:1px solid rgba(152,118,84,0.3);border-radius:6px;background:white;">
                 <button onclick="copyCheckinLink(document.getElementById('checkinUrl').value)"
                     class="btn btn-primary" style="padding:0.4rem 0.75rem;font-size:0.8rem;">Copy</button>
             </div>

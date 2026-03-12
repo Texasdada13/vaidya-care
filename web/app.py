@@ -3,6 +3,8 @@ vaidya-care — Ayurvedic Practice Management
 Flask application entry point.
 """
 import os
+import io
+import base64
 import logging
 from datetime import datetime, date
 from dotenv import load_dotenv
@@ -246,6 +248,22 @@ def patient_detail(patient_id):
         .all())
     token = patient.checkin_token
 
+    # QR code for check-in link
+    qr_b64 = None
+    if token:
+        try:
+            import qrcode, qrcode.image.svg
+            checkin_url = request.host_url.rstrip('/') + f'/checkin/{token.token}'
+            qr = qrcode.QRCode(version=1, box_size=4, border=2)
+            qr.add_data(checkin_url)
+            qr.make(fit=True)
+            img = qr.make_image(fill_color='#2d2218', back_color='white')
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            qr_b64 = base64.b64encode(buf.getvalue()).decode()
+        except Exception:
+            pass
+
     # Chart data: last 14 days in chronological order
     chart_checkins = list(reversed(recent_checkins))
     chart_data = [{
@@ -266,6 +284,7 @@ def patient_detail(patient_id):
         followups=followups,
         checkin_token=token,
         chart_data=chart_data,
+        qr_b64=qr_b64,
     )
 
 
