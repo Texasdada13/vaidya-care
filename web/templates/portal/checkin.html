@@ -1,0 +1,194 @@
+{% extends "portal/base.html" %}
+{% block title %}Daily Check-In{% endblock %}
+
+{% block head %}
+<style>
+    .section {
+        background: var(--card);
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem;
+        margin-bottom: 0.85rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .section-title {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin-bottom: 0.75rem;
+    }
+    .check-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.55rem 0;
+        border-bottom: 1px solid #f5f0ea;
+        cursor: pointer;
+    }
+    .check-item:last-child { border-bottom: none; }
+    .check-item input[type=checkbox] {
+        width: 22px;
+        height: 22px;
+        accent-color: var(--green);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+    .check-item label { font-size: 0.9rem; cursor: pointer; line-height: 1.4; flex: 1; }
+
+    /* Star rating */
+    .rating-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0;
+        border-bottom: 1px solid #f5f0ea;
+    }
+    .rating-row:last-child { border-bottom: none; }
+    .rating-label { flex: 1; font-size: 0.9rem; }
+    .stars { display: flex; flex-direction: row-reverse; gap: 4px; }
+    .stars input { display: none; }
+    .stars label { font-size: 1.5rem; cursor: pointer; color: #d9cfc4; transition: color 0.1s; }
+    .stars input:checked ~ label,
+    .stars label:hover,
+    .stars label:hover ~ label { color: #f59e0b; }
+
+    textarea {
+        width: 100%;
+        border: 1px solid #e5ddd4;
+        border-radius: 10px;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        resize: vertical;
+        outline: none;
+        font-family: inherit;
+        background: #fdfaf7;
+    }
+    textarea:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(152,118,84,0.15); }
+
+    .already-done {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+    .already-done i { font-size: 3rem; color: var(--green); display: block; margin-bottom: 1rem; }
+
+    /* Suppress bottom nav space for scrolling form */
+    .progress-bar-wrap {
+        position: sticky;
+        top: 0;
+        background: var(--bg);
+        padding: 0.5rem 0 0.25rem;
+        z-index: 10;
+    }
+    .progress-bar-bg { height: 5px; background: #e8dfd4; border-radius: 3px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if already_submitted %}
+<div class="already-done">
+    <i class="bi bi-check-circle-fill"></i>
+    <h2 style="font-size:1.2rem;font-weight:800;margin-bottom:0.5rem;">All done for today!</h2>
+    <p style="font-size:0.88rem;color:var(--muted);margin-bottom:1.5rem;">You've already completed your check-in. See you tomorrow!</p>
+    <a href="{{ url_for('portal_home', token=tok.token) }}" class="btn-primary">← Back to Home</a>
+</div>
+
+{% else %}
+
+<div style="margin-bottom:1rem;">
+    <h2 style="font-size:1.1rem;font-weight:800;">Daily Check-In</h2>
+    <p style="font-size:0.83rem;color:var(--muted);">{{ today | datefmt('%A, %B %-d') }}</p>
+</div>
+
+<div class="progress-bar-wrap">
+    <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:3px;">
+        <span>Progress</span><span id="progressLabel">0 / 16 habits</span>
+    </div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%;"></div></div>
+</div>
+
+<form method="POST" id="checkinForm">
+
+    <!-- Morning -->
+    <div class="section">
+        <div class="section-title">🌅 Morning Routine</div>
+        <div class="check-item"><input type="checkbox" name="warm_water" id="ww" onchange="updateProgress()"><label for="ww">Drank warm water on waking</label></div>
+        <div class="check-item"><input type="checkbox" name="breathing_exercise" id="be" onchange="updateProgress()"><label for="be">Breathing exercise (4s inhale / 6s exhale)</label></div>
+        <div class="check-item"><input type="checkbox" name="nasal_oil" id="no" onchange="updateProgress()"><label for="no">Nasal oil (2 drops sesame/ghee in each nostril)</label></div>
+    </div>
+
+    <!-- Meals -->
+    <div class="section">
+        <div class="section-title">🍲 Meals</div>
+        <div class="check-item"><input type="checkbox" name="warm_breakfast" id="wb" onchange="updateProgress()"><label for="wb">Warm breakfast</label></div>
+        <div class="check-item"><input type="checkbox" name="avoided_cold_food" id="acf" onchange="updateProgress()"><label for="acf">Avoided cold / refrigerated foods</label></div>
+        <div class="check-item"><input type="checkbox" name="avoided_yogurt" id="ay" onchange="updateProgress()"><label for="ay">Avoided yogurt and fermented foods</label></div>
+        <div class="check-item"><input type="checkbox" name="herbal_tea_am" id="ht" onchange="updateProgress()"><label for="ht">Herbal tea (Tulsi / Licorice / Coriander-Barley)</label></div>
+        <div class="check-item"><input type="checkbox" name="warm_lunch" id="wl" onchange="updateProgress()"><label for="wl">Warm, freshly cooked lunch</label></div>
+        <div class="check-item"><input type="checkbox" name="included_barley" id="ib" onchange="updateProgress()"><label for="ib">Included barley or rice</label></div>
+        <div class="check-item"><input type="checkbox" name="no_cold_drinks" id="ncd" onchange="updateProgress()"><label for="ncd">No cold beverages during meals</label></div>
+        <div class="check-item"><input type="checkbox" name="warm_dinner" id="wd" onchange="updateProgress()"><label for="wd">Light, warm dinner</label></div>
+        <div class="check-item"><input type="checkbox" name="dinner_before_8pm" id="d8" onchange="updateProgress()"><label for="d8">Finished dinner before 8pm</label></div>
+    </div>
+
+    <!-- Supplements -->
+    <div class="section">
+        <div class="section-title">💊 Supplements</div>
+        {% if active_plan and active_plan.plan_supplements %}
+        <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.6rem;">Your plan: {{ active_plan.plan_supplements | map(attribute='supplement') | map(attribute='name') | join(', ') }}</p>
+        {% endif %}
+        <div class="check-item"><input type="checkbox" name="supplements_am" id="sam" onchange="updateProgress()"><label for="sam">Morning supplements taken</label></div>
+        <div class="check-item"><input type="checkbox" name="supplements_pm" id="spm" onchange="updateProgress()"><label for="spm">Evening supplements taken</label></div>
+    </div>
+
+    <!-- Lifestyle -->
+    <div class="section">
+        <div class="section-title">🏃 Lifestyle</div>
+        <div class="check-item"><input type="checkbox" name="cardio_today" id="ct"><label for="ct">Cardiovascular activity (brisk walk, light jog)</label></div>
+        <div class="check-item"><input type="checkbox" name="consistent_sleep" id="cs"><label for="cs">Consistent sleep schedule maintained</label></div>
+    </div>
+
+    <!-- Symptom ratings -->
+    <div class="section">
+        <div class="section-title">📊 How are you feeling? (1 = poor, 5 = great)</div>
+        {% for field, label in [('digestion_score','Digestion'),('energy_score','Energy Level'),('urinary_score','Urinary Comfort'),('sinus_score','Sinus / Breathing')] %}
+        <div class="rating-row">
+            <div class="rating-label">{{ label }}</div>
+            <div class="stars">
+                {% for i in [5,4,3,2,1] %}
+                <input type="radio" name="{{ field }}" id="{{ field }}_{{ i }}" value="{{ i }}">
+                <label for="{{ field }}_{{ i }}">★</label>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Notes -->
+    <div class="section">
+        <div class="section-title">📝 Notes (optional)</div>
+        <textarea name="notes" rows="3" placeholder="Any symptoms, questions, or observations for Dr. Meenakshi…"></textarea>
+    </div>
+
+    <button type="submit" class="btn-success" style="margin-bottom:1rem;">
+        Submit Today's Check-In ✓
+    </button>
+</form>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updateProgress() {
+    const boxes = document.querySelectorAll('#checkinForm input[type=checkbox]');
+    const total  = boxes.length;
+    const done   = [...boxes].filter(b => b.checked).length;
+    const pct    = Math.round(done / total * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = done + ' / ' + total + ' habits';
+}
+</script>
+{% endblock %}

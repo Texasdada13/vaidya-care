@@ -1,0 +1,215 @@
+{% extends "portal/base.html" %}
+{% block title %}My Plan{% endblock %}
+
+{% block head %}
+<style>
+    .plan-header {
+        background: linear-gradient(135deg, #987654 0%, #7a5c3c 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 1.4rem 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .plan-header h1 { font-size: 1.15rem; font-weight: 800; }
+    .plan-header p  { font-size: 0.83rem; opacity: 0.8; margin-top: 0.3rem; }
+    .plan-meta { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-top: 0.75rem; }
+
+    .supp-item {
+        padding: 0.85rem 0;
+        border-bottom: 1px solid #f0e8e0;
+    }
+    .supp-item:last-child { border-bottom: none; }
+    .supp-name  { font-size: 0.95rem; font-weight: 700; }
+    .supp-meta  { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+    .supp-notes { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; font-style: italic; }
+
+    .recipe-item {
+        padding: 0.85rem 0;
+        border-bottom: 1px solid #f0e8e0;
+    }
+    .recipe-item:last-child { border-bottom: none; }
+    .recipe-name { font-size: 0.95rem; font-weight: 700; }
+
+    .foods-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+    .foods-list li {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        font-size: 0.88rem;
+    }
+    .foods-list li::before { flex-shrink: 0; margin-top: 2px; }
+    .foods-include li::before { content: "✓"; color: var(--green); font-weight: 700; }
+    .foods-avoid   li::before { content: "✗"; color: var(--red);   font-weight: 700; }
+
+    .note-block {
+        background: #fdf8f3;
+        border-left: 3px solid var(--brand);
+        border-radius: 0 8px 8px 0;
+        padding: 0.75rem 1rem;
+        font-size: 0.88rem;
+        line-height: 1.6;
+        white-space: pre-wrap;
+    }
+    .no-plan {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--muted);
+    }
+    .no-plan i { font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.4; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if not plan %}
+<div class="no-plan">
+    <i class="bi bi-journal-x"></i>
+    <h2 style="font-size:1.1rem;margin-bottom:0.5rem;">No Active Plan Yet</h2>
+    <p style="font-size:0.88rem;">Your practitioner hasn't created a consultation plan yet. Check back after your next appointment.</p>
+</div>
+
+{% else %}
+
+<div class="plan-header">
+    <h1>{{ plan.title }}</h1>
+    {% if plan.start_date %}
+    <p>Started {{ plan.start_date | datefmt('%B %-d, %Y') }}{% if plan.duration_weeks %} · {{ plan.duration_weeks }}-week protocol{% endif %}</p>
+    {% elif plan.duration_weeks %}
+    <p>{{ plan.duration_weeks }}-week protocol</p>
+    {% endif %}
+    <div class="plan-meta">
+        {% if plan.plan_supplements %}
+        <span class="badge" style="background:rgba(255,255,255,0.2);color:white;">{{ plan.plan_supplements|length }} Supplement{{ 's' if plan.plan_supplements|length != 1 }}</span>
+        {% endif %}
+        {% if plan.plan_recipes %}
+        <span class="badge" style="background:rgba(255,255,255,0.2);color:white;">{{ plan.plan_recipes|length }} Recipe{{ 's' if plan.plan_recipes|length != 1 }}</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Supplements -->
+{% if plan.plan_supplements %}
+<div class="card">
+    <div class="card-title">💊 Supplements & Herbs</div>
+    {% for ps in plan.plan_supplements %}
+    <div class="supp-item">
+        <div class="supp-name">{{ ps.supplement.name }}</div>
+        {% if ps.supplement.brand %}
+        <div style="font-size:0.78rem;color:var(--muted);">{{ ps.supplement.brand }}</div>
+        {% endif %}
+        <div class="supp-meta">
+            {% if ps.dose %}
+            <span class="badge badge-brand">{{ ps.dose }}</span>
+            {% endif %}
+            {% if ps.timing %}
+            <span class="badge badge-brand">{{ ps.timing }}</span>
+            {% endif %}
+            {% if ps.frequency %}
+            <span class="badge badge-amber">{{ ps.frequency }}</span>
+            {% endif %}
+        </div>
+        {% if ps.supplement.purpose %}
+        <div class="supp-notes">{{ ps.supplement.purpose }}</div>
+        {% endif %}
+        {% if ps.special_notes %}
+        <div class="supp-notes" style="color:#987654;">Note: {{ ps.special_notes }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recipes by meal slot -->
+{% if plan.plan_recipes %}
+<div class="card">
+    <div class="card-title">🍲 Meal Recommendations</div>
+    {% set slots = ['Breakfast', 'Lunch', 'Dinner', 'Tea', 'Snack'] %}
+    {% for slot in slots %}
+    {% set slot_recipes = plan.plan_recipes | selectattr('meal_slot', 'equalto', slot) | list %}
+    {% if slot_recipes %}
+    <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem;{% if not loop.first %}margin-top:0.75rem;{% endif %}">{{ slot }}</div>
+    {% for pr in slot_recipes %}
+    <div class="recipe-item">
+        <div class="recipe-name">{{ pr.recipe.name }}</div>
+        {% if pr.recipe.ingredients %}
+        <div style="font-size:0.8rem;color:var(--muted);margin-top:0.25rem;">{{ pr.recipe.ingredients }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% endif %}
+    {% endfor %}
+    <!-- Any without a slot -->
+    {% set unslotted = plan.plan_recipes | selectattr('meal_slot', 'none') | list %}
+    {% for pr in unslotted %}
+    <div class="recipe-item">
+        <div class="recipe-name">{{ pr.recipe.name }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Foods to Include -->
+{% if plan.foods_to_include %}
+<div class="card">
+    <div class="card-title">✅ Foods to Include</div>
+    <ul class="foods-list foods-include">
+        {% for item in plan.foods_to_include.splitlines() %}
+        {% if item.strip() %}
+        <li>{{ item.strip().lstrip('•-–').strip() }}</li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Foods to Avoid -->
+{% if plan.foods_to_avoid %}
+<div class="card">
+    <div class="card-title">❌ Foods to Avoid</div>
+    <ul class="foods-list foods-avoid">
+        {% for item in plan.foods_to_avoid.splitlines() %}
+        {% if item.strip() %}
+        <li>{{ item.strip().lstrip('•-–').strip() }}</li>
+        {% endif %}
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<!-- Lifestyle notes -->
+{% if plan.lifestyle_notes %}
+<div class="card">
+    <div class="card-title">🌿 Lifestyle Guidance</div>
+    <div class="note-block">{{ plan.lifestyle_notes }}</div>
+</div>
+{% endif %}
+
+<!-- Breathing / Nasya -->
+{% if plan.breathing_notes or plan.nasal_care_notes %}
+<div class="card">
+    {% if plan.breathing_notes %}
+    <div class="card-title">🫁 Breathing Practice</div>
+    <div class="note-block" style="margin-bottom:{% if plan.nasal_care_notes %}0.75rem{% else %}0{% endif %};">{{ plan.breathing_notes }}</div>
+    {% endif %}
+    {% if plan.nasal_care_notes %}
+    <div class="card-title" style="margin-top:0.75rem;">💧 Nasal Care</div>
+    <div class="note-block">{{ plan.nasal_care_notes }}</div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Follow-up notes -->
+{% if plan.followup_notes %}
+<div class="card">
+    <div class="card-title">📌 Practitioner Notes</div>
+    <div class="note-block">{{ plan.followup_notes }}</div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}

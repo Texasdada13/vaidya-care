@@ -1,0 +1,183 @@
+{% extends "portal/base.html" %}
+{% block title %}My Progress{% endblock %}
+
+{% block head %}
+<style>
+    .chart-wrap {
+        background: var(--card);
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem 0.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .chart-wrap canvas { width: 100% !important; }
+
+    .ci-log-item {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0e8e0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .ci-log-item:last-child { border-bottom: none; }
+    .ci-date {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--muted);
+        min-width: 60px;
+    }
+    .ci-bar-wrap { flex: 1; }
+    .ci-bar-bg {
+        height: 8px;
+        background: #f0e8e0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .ci-bar-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #987654, #c9a97a);
+    }
+    .ci-pct {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--brand);
+        min-width: 36px;
+        text-align: right;
+    }
+    .ci-scores {
+        display: flex;
+        gap: 0.25rem;
+        flex-wrap: wrap;
+        margin-top: 0.25rem;
+    }
+    .score-pill {
+        font-size: 0.68rem;
+        padding: 0.1em 0.45em;
+        border-radius: 10px;
+        background: #f2ece4;
+        color: var(--brand-dk);
+        font-weight: 600;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--muted);
+    }
+    .empty-state i { font-size: 2.5rem; display: block; margin-bottom: 0.75rem; opacity: 0.35; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:0.75rem;">
+    <h2 style="font-size:1.1rem;font-weight:800;">My Progress</h2>
+    <p style="font-size:0.83rem;color:var(--muted);">Last {{ checkins|length }} check-in{{ 's' if checkins|length != 1 }}</p>
+</div>
+
+{% if chart_data %}
+<div class="chart-wrap">
+    <div class="card-title">Symptom Scores (1–5)</div>
+    <canvas id="symptomChart" height="180"></canvas>
+</div>
+
+<div class="chart-wrap">
+    <div class="card-title">Habit Completion %</div>
+    <canvas id="habitChart" height="120"></canvas>
+</div>
+
+<!-- Check-in log -->
+<div class="card" style="padding:1.1rem 1.25rem 0.25rem;">
+    <div class="card-title">Check-In Log</div>
+    {% for ci in checkins %}
+    <div class="ci-log-item">
+        <div class="ci-date">{{ ci.date | datefmt('%b %-d') }}</div>
+        <div class="ci-bar-wrap">
+            <div class="ci-bar-bg">
+                <div class="ci-bar-fill" style="width:{{ ci.habit_completion_pct }}%;"></div>
+            </div>
+            {% if ci.digestion_score or ci.energy_score or ci.urinary_score or ci.sinus_score %}
+            <div class="ci-scores">
+                {% if ci.digestion_score %}<span class="score-pill">Dig {{ ci.digestion_score }}/5</span>{% endif %}
+                {% if ci.energy_score    %}<span class="score-pill">Enrg {{ ci.energy_score }}/5</span>{% endif %}
+                {% if ci.urinary_score   %}<span class="score-pill">Urin {{ ci.urinary_score }}/5</span>{% endif %}
+                {% if ci.sinus_score     %}<span class="score-pill">Sinus {{ ci.sinus_score }}/5</span>{% endif %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="ci-pct">{{ ci.habit_completion_pct }}%</div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <i class="bi bi-graph-up-arrow"></i>
+    <h2 style="font-size:1rem;font-weight:700;margin-bottom:0.4rem;">No check-ins yet</h2>
+    <p style="font-size:0.85rem;">Start your daily check-in to track your progress over time.</p>
+    <a href="{{ url_for('portal_checkin', token=tok.token) }}" class="btn-success" style="margin-top:1rem;max-width:260px;margin-left:auto;margin-right:auto;">
+        Start First Check-In
+    </a>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if chart_data %}
+<script>
+const data = {{ chart_data | tojson }};
+const labels = data.map(d => d.date);
+
+const palette = {
+    digestion: '#987654',
+    energy:    '#e8a020',
+    urinary:   '#4a90d9',
+    sinus:     '#6dbd7b',
+};
+
+new Chart(document.getElementById('symptomChart'), {
+    type: 'line',
+    data: {
+        labels,
+        datasets: [
+            { label:'Digestion', data: data.map(d=>d.digestion), borderColor: palette.digestion, backgroundColor: palette.digestion+'22', tension:0.35, pointRadius:3, borderWidth:2 },
+            { label:'Energy',    data: data.map(d=>d.energy),    borderColor: palette.energy,    backgroundColor: palette.energy+'22',    tension:0.35, pointRadius:3, borderWidth:2 },
+            { label:'Urinary',   data: data.map(d=>d.urinary),   borderColor: palette.urinary,   backgroundColor: palette.urinary+'22',   tension:0.35, pointRadius:3, borderWidth:2 },
+            { label:'Sinus',     data: data.map(d=>d.sinus),     borderColor: palette.sinus,     backgroundColor: palette.sinus+'22',     tension:0.35, pointRadius:3, borderWidth:2 },
+        ]
+    },
+    options: {
+        plugins: { legend: { position:'bottom', labels:{ boxWidth:10, font:{size:11} } } },
+        scales: {
+            y: { min:0, max:5, ticks:{stepSize:1}, grid:{color:'#f0e8e0'} },
+            x: { ticks:{font:{size:10}}, grid:{display:false} }
+        }
+    }
+});
+
+new Chart(document.getElementById('habitChart'), {
+    type: 'bar',
+    data: {
+        labels,
+        datasets: [{
+            label: 'Habit %',
+            data: data.map(d=>d.habits),
+            backgroundColor: '#987654aa',
+            borderColor: '#987654',
+            borderWidth: 1,
+            borderRadius: 4,
+        }]
+    },
+    options: {
+        plugins: { legend: { display:false } },
+        scales: {
+            y: { min:0, max:100, ticks:{callback: v=>v+'%'}, grid:{color:'#f0e8e0'} },
+            x: { ticks:{font:{size:10}}, grid:{display:false} }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

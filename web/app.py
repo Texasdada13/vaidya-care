@@ -49,6 +49,15 @@ login_manager.login_message = 'Please log in to access this page.'
 app.jinja_env.globals['now'] = datetime.now
 app.jinja_env.globals['today'] = date.today
 
+def _datefmt(d, fmt):
+    """strftime wrapper that supports %-d (no-zero-pad day) on Windows."""
+    import platform
+    if platform.system() == 'Windows':
+        fmt = fmt.replace('%-d', '%#d')
+    return d.strftime(fmt)
+
+app.jinja_env.filters['datefmt'] = _datefmt
+
 PRACTITIONER_EMAIL = os.environ.get('PRACTITIONER_EMAIL', '')
 ANTHROPIC_API_KEY  = os.environ.get('ANTHROPIC_API_KEY', '')
 
@@ -594,6 +603,148 @@ Notes: {checkin.notes or 'None'}
         mail.send(msg)
     except Exception as e:
         log.warning(f'Failed to send check-in email: {e}')
+
+
+# ─── Patient Portal ──────────────────────────────────────────────────────────
+
+def _portal_context(token_str):
+    """Shared helper: resolve token → (tok, patient) or 404."""
+    tok = CheckInToken.query.filter_by(token=token_str, active=True).first_or_404()
+    return tok, tok.patient
+
+
+@app.route('/portal/<token>')
+def portal_home(token):
+    from datetime import timedelta
+    tok, patient = _portal_context(token)
+    today_date = date.today()
+    already_checked_in = DailyCheckIn.query.filter_by(
+        patient_id=patient.id, date=today_date
+    ).first()
+
+    # Streak: count consecutive days ending today (or yesterday)
+    streak = 0
+    check_date = today_date if already_checked_in else today_date - timedelta(days=1)
+    while True:
+        ci = DailyCheckIn.query.filter_by(patient_id=patient.id, date=check_date).first()
+        if ci:
+            streak += 1
+            check_date -= timedelta(days=1)
+        else:
+            break
+
+    next_followup = (patient.followups
+        .filter(FollowUp.completed == False, FollowUp.scheduled_date >= today_date)
+        .order_by(FollowUp.scheduled_date)
+        .first())
+
+    last_checkin = patient.checkins.order_by(DailyCheckIn.date.desc()).first()
+
+    return render_template('portal/home.html',
+        tok=tok, patient=patient,
+        already_checked_in=already_checked_in,
+        streak=streak,
+        next_followup=next_followup,
+        last_checkin=last_checkin,
+        today=today_date,
+    )
+
+
+@app.route('/portal/<token>/plan')
+def portal_plan(token):
+    tok, patient = _portal_context(token)
+    plan = patient.active_plan
+    return render_template('portal/plan.html',
+        tok=tok, patient=patient, plan=plan,
+    )
+
+
+@app.route('/portal/<token>/history')
+def portal_history(token):
+    tok, patient = _portal_context(token)
+    checkins = patient.checkins.order_by(DailyCheckIn.date.desc()).limit(30).all()
+    chart_data = [{
+        'date': ci.date.strftime('%b %d'),
+        'digestion': ci.digestion_score,
+        'urinary': ci.urinary_score,
+        'sinus': ci.sinus_score,
+        'energy': ci.energy_score,
+        'habits': ci.habit_completion_pct,
+    } for ci in reversed(checkins)]
+    return render_template('portal/history.html',
+        tok=tok, patient=patient,
+        checkins=checkins,
+        chart_data=chart_data,
+    )
+
+
+@app.route('/portal/<token>/checkin', methods=['GET', 'POST'])
+def portal_checkin(token):
+    """Enhanced check-in within the portal shell."""
+    tok, patient = _portal_context(token)
+    today_date = date.today()
+
+    if request.method == 'POST':
+        ci = DailyCheckIn(
+            patient_id=patient.id,
+            date=today_date,
+            warm_water=bool(request.form.get('warm_water')),
+            breathing_exercise=bool(request.form.get('breathing_exercise')),
+            nasal_oil=bool(request.form.get('nasal_oil')),
+            warm_breakfast=bool(request.form.get('warm_breakfast')),
+            avoided_cold_food=bool(request.form.get('avoided_cold_food')),
+            avoided_yogurt=bool(request.form.get('avoided_yogurt')),
+            herbal_tea_am=bool(request.form.get('herbal_tea_am')),
+            warm_lunch=bool(request.form.get('warm_lunch')),
+            included_barley=bool(request.form.get('included_barley')),
+            no_cold_drinks=bool(request.form.get('no_cold_drinks')),
+            warm_dinner=bool(request.form.get('warm_dinner')),
+            dinner_before_8pm=bool(request.form.get('dinner_before_8pm')),
+            supplements_am=bool(request.form.get('supplements_am')),
+            supplements_pm=bool(request.form.get('supplements_pm')),
+            cardio_today=bool(request.form.get('cardio_today')),
+            consistent_sleep=bool(request.form.get('consistent_sleep')),
+            digestion_score=int(request.form.get('digestion_score') or 0) or None,
+            urinary_score=int(request.form.get('urinary_score') or 0) or None,
+            sinus_score=int(request.form.get('sinus_score') or 0) or None,
+            energy_score=int(request.form.get('energy_score') or 0) or None,
+            notes=request.form.get('notes', '').strip(),
+        )
+        db.session.add(ci)
+        db.session.commit()
+        _notify_checkin(patient, ci)
+        return redirect(url_for('portal_home', token=token))
+
+    already_submitted = DailyCheckIn.query.filter_by(
+        patient_id=patient.id, date=today_date
+    ).first()
+
+    return render_template('portal/checkin.html',
+        tok=tok, patient=patient,
+        already_submitted=already_submitted,
+        active_plan=patient.active_plan,
+        today=today_date,
+    )
+
+
+@app.route('/portal/<token>/followups')
+def portal_followups(token):
+    tok, patient = _portal_context(token)
+    upcoming = (patient.followups
+        .filter(FollowUp.completed == False)
+        .order_by(FollowUp.scheduled_date)
+        .all())
+    past = (patient.followups
+        .filter(FollowUp.completed == True)
+        .order_by(FollowUp.scheduled_date.desc())
+        .limit(5)
+        .all())
+    return render_template('portal/followups.html',
+        tok=tok, patient=patient,
+        upcoming=upcoming,
+        past=past,
+        today=date.today(),
+    )
 
 
 # ─── Recipes & Supplements ───────────────────────────────────────────────────

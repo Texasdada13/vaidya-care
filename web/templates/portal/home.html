@@ -1,0 +1,177 @@
+{% extends "portal/base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block head %}
+<style>
+    .greeting-card {
+        background: linear-gradient(135deg, #2d2218 0%, #4a3525 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 1.4rem 1.5rem;
+        margin-bottom: 1rem;
+    }
+    .greeting-card h1 { font-size: 1.35rem; font-weight: 800; margin-bottom: 0.25rem; }
+    .greeting-card p  { font-size: 0.88rem; opacity: 0.75; }
+
+    .checkin-cta {
+        border-radius: 16px;
+        padding: 1.4rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    .checkin-cta.done {
+        background: var(--green-lt);
+        border: 2px solid #86efac;
+    }
+    .checkin-cta.pending {
+        background: #fffbf0;
+        border: 2px dashed var(--brand);
+    }
+    .checkin-cta i { font-size: 2.2rem; display: block; margin-bottom: 0.5rem; }
+    .checkin-cta.done i   { color: var(--green); }
+    .checkin-cta.pending i { color: var(--brand); }
+    .checkin-cta h2 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .checkin-cta p  { font-size: 0.83rem; color: var(--muted); margin-bottom: 0.9rem; }
+
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; }
+    .stat-card {
+        background: var(--card);
+        border-radius: 14px;
+        padding: 1rem;
+        text-align: center;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .stat-num  { font-size: 1.8rem; font-weight: 800; color: var(--brand); line-height: 1; }
+    .stat-label { font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; font-weight: 600; text-transform: uppercase; }
+
+    .habit-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .habit-row  { display: flex; align-items: center; gap: 0.6rem; font-size: 0.88rem; }
+    .habit-row i { font-size: 1rem; }
+    .habit-done    { color: var(--green); }
+    .habit-missed  { color: #d1d5db; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% set day_names = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'] %}
+{% set month_names = ['January','February','March','April','May','June','July','August','September','October','November','December'] %}
+
+<div class="greeting-card">
+    <h1>Namaste, {{ patient.first_name }}! 🙏</h1>
+    <p>{{ today | datefmt('%A, %B %-d, %Y') }}</p>
+</div>
+
+<!-- Check-in CTA -->
+{% if already_checked_in %}
+<div class="checkin-cta done">
+    <i class="bi bi-check-circle-fill"></i>
+    <h2>Check-In Complete!</h2>
+    <p>You've logged today's habits. Great work — consistency is the root of wellness.</p>
+    <span class="badge badge-green">✓ Submitted {{ already_checked_in.submitted_at.strftime('%I:%M %p') }}</span>
+</div>
+{% else %}
+<div class="checkin-cta pending">
+    <i class="bi bi-clipboard2-pulse"></i>
+    <h2>Daily Check-In Awaits</h2>
+    <p>Take 2 minutes to log today's habits and symptoms.</p>
+    <a href="{{ url_for('portal_checkin', token=tok.token) }}" class="btn-success">
+        Start Today's Check-In →
+    </a>
+</div>
+{% endif %}
+
+<!-- Stats row -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-num">{{ streak }}</div>
+        <div class="stat-label">🔥 Day Streak</div>
+    </div>
+    <div class="stat-card">
+        {% if next_followup %}
+        {% set days_until = (next_followup.scheduled_date - today).days %}
+        <div class="stat-num">{{ days_until }}</div>
+        <div class="stat-label">📅 Days to Next Visit</div>
+        {% else %}
+        <div class="stat-num" style="font-size:1.2rem;">–</div>
+        <div class="stat-label">📅 Next Visit</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Active plan summary -->
+{% if patient.active_plan %}
+{% set plan = patient.active_plan %}
+<div class="card">
+    <div class="card-title">📋 Your Active Plan</div>
+    <div style="font-size:0.95rem;font-weight:700;margin-bottom:0.4rem;">{{ plan.title }}</div>
+    <div style="font-size:0.83rem;color:var(--muted);margin-bottom:0.75rem;">
+        {{ plan.plan_supplements|length }} supplement{{ 's' if plan.plan_supplements|length != 1 }} ·
+        {{ plan.plan_recipes|length }} recipe{{ 's' if plan.plan_recipes|length != 1 }}
+        {% if plan.duration_weeks %} · {{ plan.duration_weeks }}-week protocol{% endif %}
+    </div>
+    <a href="{{ url_for('portal_plan', token=tok.token) }}" class="btn-primary">View My Plan →</a>
+</div>
+{% endif %}
+
+<!-- Yesterday's habit snapshot -->
+{% if last_checkin and last_checkin.date == today %}
+{% set ci = already_checked_in %}
+{% elif last_checkin %}
+{% set ci = last_checkin %}
+{% else %}
+{% set ci = none %}
+{% endif %}
+
+{% if ci and ci.date == today %}
+<div class="card">
+    <div class="card-title">Today's Habits — {{ ci.habit_completion_pct }}% Complete</div>
+    <div class="habit-list">
+        <div class="habit-row {% if ci.warm_water %}habit-done{% else %}habit-missed{% endif %}">
+            <i class="bi bi-{% if ci.warm_water %}check-circle-fill{% else %}circle{% endif %}"></i>
+            Warm water on waking
+        </div>
+        <div class="habit-row {% if ci.breathing_exercise %}habit-done{% else %}habit-missed{% endif %}">
+            <i class="bi bi-{% if ci.breathing_exercise %}check-circle-fill{% else %}circle{% endif %}"></i>
+            Breathing exercise
+        </div>
+        <div class="habit-row {% if ci.nasal_oil %}habit-done{% else %}habit-missed{% endif %}">
+            <i class="bi bi-{% if ci.nasal_oil %}check-circle-fill{% else %}circle{% endif %}"></i>
+            Nasal oil
+        </div>
+        <div class="habit-row {% if ci.supplements_am %}habit-done{% else %}habit-missed{% endif %}">
+            <i class="bi bi-{% if ci.supplements_am %}check-circle-fill{% else %}circle{% endif %}"></i>
+            Morning supplements
+        </div>
+        <div class="habit-row {% if ci.supplements_pm %}habit-done{% else %}habit-missed{% endif %}">
+            <i class="bi bi-{% if ci.supplements_pm %}check-circle-fill{% else %}circle{% endif %}"></i>
+            Evening supplements
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Next followup detail -->
+{% if next_followup %}
+<div class="card">
+    <div class="card-title">📅 Next Appointment</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div>
+            <div style="font-size:1rem;font-weight:700;">{{ next_followup.scheduled_date | datefmt('%B %-d, %Y') }}</div>
+            {% if next_followup.reason %}
+            <div style="font-size:0.83rem;color:var(--muted);margin-top:0.2rem;">{{ next_followup.reason }}</div>
+            {% endif %}
+        </div>
+        {% set days_until = (next_followup.scheduled_date - today).days %}
+        {% if days_until == 0 %}
+        <span class="badge badge-green">Today</span>
+        {% elif days_until <= 7 %}
+        <span class="badge badge-amber">In {{ days_until }} day{{ 's' if days_until != 1 }}</span>
+        {% else %}
+        <span class="badge badge-brand">In {{ days_until }} days</span>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

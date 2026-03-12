@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}My Wellness Portal{% endblock %} — AyurRoots</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --brand:    #987654;
+            --brand-dk: #7a5c3c;
+            --bg:       #f5f0ea;
+            --card:     #ffffff;
+            --text:     #2d2218;
+            --muted:    #7a6a5a;
+            --green:    #3a7d44;
+            --green-lt: #e8f5ea;
+            --amber:    #d97706;
+            --red:      #dc2626;
+            --nav-h:    64px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+        }
+
+        /* ── Top Header ── */
+        .portal-header {
+            background: linear-gradient(135deg, #2d2218 0%, #4a3525 100%);
+            color: white;
+            padding: 0.85rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+        }
+        .portal-header img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: white; }
+        .portal-header-info { flex: 1; }
+        .portal-header-name { font-size: 0.95rem; font-weight: 700; line-height: 1.2; }
+        .portal-header-sub  { font-size: 0.72rem; color: rgba(255,255,255,0.6); }
+
+        /* ── Content ── */
+        .portal-content { max-width: 600px; margin: 0 auto; padding: 1.25rem 1rem; }
+
+        /* ── Bottom Nav ── */
+        .portal-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+            background: white;
+            border-top: 1px solid #e8e0d8;
+            display: flex;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+            z-index: 100;
+        }
+        .nav-tab {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding-bottom: env(safe-area-inset-bottom);
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            transition: color 0.15s;
+        }
+        .nav-tab i { font-size: 1.3rem; }
+        .nav-tab.active { color: var(--brand); }
+        .nav-tab:active { opacity: 0.7; }
+
+        /* ── Cards ── */
+        .card {
+            background: var(--card);
+            border-radius: 14px;
+            padding: 1.1rem 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .card-title {
+            font-size: 0.72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 0.75rem;
+        }
+
+        /* ── Buttons ── */
+        .btn-primary {
+            display: block;
+            width: 100%;
+            padding: 0.9rem;
+            background: var(--brand);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover { background: var(--brand-dk); }
+        .btn-success {
+            display: block;
+            width: 100%;
+            padding: 0.9rem;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        /* ── Section label ── */
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin: 1.25rem 0 0.6rem;
+        }
+
+        /* ── Pill badges ── */
+        .badge {
+            display: inline-block;
+            padding: 0.2em 0.6em;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .badge-brand  { background: #f2ece4; color: var(--brand); }
+        .badge-green  { background: var(--green-lt); color: var(--green); }
+        .badge-amber  { background: #fef3c7; color: var(--amber); }
+        .badge-red    { background: #fee2e2; color: var(--red); }
+
+        /* ── Divider ── */
+        .divider { border: none; border-top: 1px solid #ede6dc; margin: 0.75rem 0; }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header class="portal-header">
+        <img src="/static/img/logo.png" alt="AyurRoots">
+        <div class="portal-header-info">
+            <div class="portal-header-name">{{ patient.first_name }}'s Wellness Portal</div>
+            <div class="portal-header-sub">AyurRoots · Powered by Vaidya Care</div>
+        </div>
+    </header>
+
+    <main class="portal-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <nav class="portal-nav">
+        <a href="{{ url_for('portal_home', token=tok.token) }}"
+           class="nav-tab {% if active_tab == 'home' %}active{% endif %}">
+            <i class="bi bi-house-fill"></i>Home
+        </a>
+        <a href="{{ url_for('portal_checkin', token=tok.token) }}"
+           class="nav-tab {% if active_tab == 'checkin' %}active{% endif %}">
+            <i class="bi bi-check2-circle"></i>Check-In
+        </a>
+        <a href="{{ url_for('portal_plan', token=tok.token) }}"
+           class="nav-tab {% if active_tab == 'plan' %}active{% endif %}">
+            <i class="bi bi-journal-text"></i>My Plan
+        </a>
+        <a href="{{ url_for('portal_history', token=tok.token) }}"
+           class="nav-tab {% if active_tab == 'history' %}active{% endif %}">
+            <i class="bi bi-graph-up"></i>Progress
+        </a>
+        <a href="{{ url_for('portal_followups', token=tok.token) }}"
+           class="nav-tab {% if active_tab == 'followups' %}active{% endif %}">
+            <i class="bi bi-calendar3"></i>Visits
+        </a>
+    </nav>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>
