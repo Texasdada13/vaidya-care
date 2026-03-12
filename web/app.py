@@ -296,6 +296,9 @@ def patient_detail(patient_id):
         'habits':    ci.habit_completion_pct,
     } for ci in chart_checkins]
 
+    all_supplements = Supplement.query.order_by(Supplement.name).all()
+    all_recipes = Recipe.query.order_by(Recipe.name).all()
+
     return render_template('patient_detail.html',
         active_page='patients',
         patient=patient,
@@ -306,6 +309,8 @@ def patient_detail(patient_id):
         checkin_token=token,
         chart_data=chart_data,
         qr_b64=qr_b64,
+        all_supplements=all_supplements,
+        all_recipes=all_recipes,
     )
 
 
@@ -348,6 +353,98 @@ def patient_profile_edit(patient_id):
             except (ValueError, TypeError): pass
     db.session.commit()
     return jsonify({'status': 'updated'})
+
+
+# ─── Plan Builder ────────────────────────────────────────────────────────────
+
+@app.route('/api/patients/<int:patient_id>/plan', methods=['POST'])
+@login_required
+def plan_save(patient_id):
+    patient = Patient.query.filter_by(id=patient_id, practitioner_id=current_user.id).first_or_404()
+    data = request.json
+    plan = patient.active_plan
+    if not plan:
+        plan = ConsultationPlan(patient_id=patient_id, active=True)
+        db.session.add(plan)
+    plan.title = data.get('title') or 'Initial Protocol'
+    if data.get('duration_weeks'):
+        try: plan.duration_weeks = int(data['duration_weeks'])
+        except (ValueError, TypeError): pass
+    for f in ['foods_to_avoid', 'foods_to_include', 'lifestyle_notes',
+              'breathing_notes', 'nasal_care_notes', 'followup_notes']:
+        if f in data:
+            setattr(plan, f, data[f] or None)
+    if data.get('start_date'):
+        try: plan.start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+        except ValueError: pass
+    if data.get('end_date'):
+        try: plan.end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+        except ValueError: pass
+    db.session.commit()
+    return jsonify({'status': 'saved', 'plan_id': plan.id})
+
+
+@app.route('/api/patients/<int:patient_id>/plan/supplements', methods=['POST'])
+@login_required
+def plan_add_supplement(patient_id):
+    patient = Patient.query.filter_by(id=patient_id, practitioner_id=current_user.id).first_or_404()
+    plan = patient.active_plan
+    if not plan:
+        return jsonify({'error': 'No active plan'}), 400
+    data = request.json
+    ps = PlanSupplement(
+        plan_id=plan.id,
+        supplement_id=int(data['supplement_id']),
+        dose=data.get('dose', ''),
+        timing=data.get('timing', ''),
+        frequency=data.get('frequency', ''),
+        special_notes=data.get('special_notes', ''),
+    )
+    db.session.add(ps)
+    db.session.commit()
+    return jsonify({'status': 'added', 'id': ps.id, 'name': ps.supplement.name,
+                    'brand': ps.supplement.brand or ''})
+
+
+@app.route('/api/plan/supplements/<int:ps_id>', methods=['DELETE'])
+@login_required
+def plan_remove_supplement(ps_id):
+    ps = PlanSupplement.query.get_or_404(ps_id)
+    if ps.plan.patient.practitioner_id != current_user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+    db.session.delete(ps)
+    db.session.commit()
+    return jsonify({'status': 'removed'})
+
+
+@app.route('/api/patients/<int:patient_id>/plan/recipes', methods=['POST'])
+@login_required
+def plan_add_recipe(patient_id):
+    patient = Patient.query.filter_by(id=patient_id, practitioner_id=current_user.id).first_or_404()
+    plan = patient.active_plan
+    if not plan:
+        return jsonify({'error': 'No active plan'}), 400
+    data = request.json
+    pr = PlanRecipe(
+        plan_id=plan.id,
+        recipe_id=int(data['recipe_id']),
+        meal_slot=data.get('meal_slot', ''),
+    )
+    db.session.add(pr)
+    db.session.commit()
+    return jsonify({'status': 'added', 'id': pr.id, 'name': pr.recipe.name,
+                    'meal_slot': pr.meal_slot or ''})
+
+
+@app.route('/api/plan/recipes/<int:pr_id>', methods=['DELETE'])
+@login_required
+def plan_remove_recipe(pr_id):
+    pr = PlanRecipe.query.get_or_404(pr_id)
+    if pr.plan.patient.practitioner_id != current_user.id:
+        return jsonify({'error': 'Forbidden'}), 403
+    db.session.delete(pr)
+    db.session.commit()
+    return jsonify({'status': 'removed'})
 
 
 # ─── Follow-Ups ──────────────────────────────────────────────────────────────

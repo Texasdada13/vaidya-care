@@ -1,6 +1,24 @@
 {% extends 'base.html' %}
 {% block title %}{{ patient.full_name }} — Vaidya Care{% endblock %}
 {% block content %}
+<style>
+.plan-tab {
+    background: none;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.15s, border-color 0.15s;
+}
+.plan-tab.active, .plan-tab:hover {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+</style>
 {% if checkin_token %}
 <script>const PATIENT_ID = {{ patient.id }};</script>
 {% endif %}
@@ -141,6 +159,125 @@
         </div>
         {% endif %}
 
+        <!-- Plan Builder -->
+        <div class="card" style="margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin:0;">Consultation Plan</h2>
+                <button onclick="openPlanModal()" class="btn btn-sm {% if active_plan %}btn-outline-secondary{% else %}btn-primary{% endif %}" style="font-size:0.78rem;padding:0.3rem 0.75rem;">
+                    {% if active_plan %}<i class="bi bi-pencil"></i> Edit Plan{% else %}<i class="bi bi-plus-lg"></i> Create Plan{% endif %}
+                </button>
+            </div>
+
+            {% if active_plan %}
+            <!-- Plan header -->
+            <div style="background:var(--primary-light);border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;border-left:4px solid var(--primary);">
+                <div style="font-weight:600;font-size:0.95rem;color:var(--primary-dark);">{{ active_plan.title }}</div>
+                <div style="font-size:0.78rem;color:var(--primary-dark);opacity:0.75;margin-top:0.2rem;">
+                    {% if active_plan.duration_weeks %}{{ active_plan.duration_weeks }}-week protocol{% endif %}
+                    {% if active_plan.start_date %} · Started {{ active_plan.start_date.strftime('%b %d, %Y') }}{% endif %}
+                    {% if active_plan.end_date %} · Ends {{ active_plan.end_date.strftime('%b %d, %Y') }}{% endif %}
+                </div>
+            </div>
+
+            <!-- Tab bar -->
+            <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:1rem;">
+                <button class="plan-tab active" onclick="switchPlanTab('details')" id="tab-details">Details</button>
+                <button class="plan-tab" onclick="switchPlanTab('supplements')" id="tab-supplements">
+                    Supplements <span style="background:#e2e8f0;border-radius:10px;padding:1px 6px;font-size:0.7rem;margin-left:3px;">{{ active_plan.plan_supplements|length }}</span>
+                </button>
+                <button class="plan-tab" onclick="switchPlanTab('recipes')" id="tab-recipes">
+                    Recipes <span style="background:#e2e8f0;border-radius:10px;padding:1px 6px;font-size:0.7rem;margin-left:3px;">{{ active_plan.plan_recipes|length }}</span>
+                </button>
+            </div>
+
+            <!-- Details tab -->
+            <div id="plan-details" class="plan-tab-content">
+                {% if active_plan.foods_to_avoid or active_plan.foods_to_include %}
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:0.75rem;">
+                    {% if active_plan.foods_to_avoid %}
+                    <div>
+                        <div style="font-size:0.72rem;font-weight:700;color:var(--danger);margin-bottom:0.3rem;">AVOID</div>
+                        <p style="font-size:0.85rem;white-space:pre-line;margin:0;">{{ active_plan.foods_to_avoid }}</p>
+                    </div>
+                    {% endif %}
+                    {% if active_plan.foods_to_include %}
+                    <div>
+                        <div style="font-size:0.72rem;font-weight:700;color:var(--success);margin-bottom:0.3rem;">INCLUDE</div>
+                        <p style="font-size:0.85rem;white-space:pre-line;margin:0;">{{ active_plan.foods_to_include }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endif %}
+                {% for label, val in [('LIFESTYLE', active_plan.lifestyle_notes), ('BREATHING / PRANAYAMA', active_plan.breathing_notes), ('NASAL CARE / NASYA', active_plan.nasal_care_notes), ('FOLLOW-UP NOTES', active_plan.followup_notes)] %}
+                {% if val %}
+                <div style="margin-bottom:0.65rem;">
+                    <div style="font-size:0.72rem;font-weight:700;color:var(--text-secondary);margin-bottom:0.25rem;">{{ label }}</div>
+                    <p style="font-size:0.85rem;white-space:pre-line;margin:0;">{{ val }}</p>
+                </div>
+                {% endif %}
+                {% endfor %}
+                {% if not (active_plan.foods_to_avoid or active_plan.foods_to_include or active_plan.lifestyle_notes) %}
+                <p style="text-align:center;color:var(--text-secondary);font-size:0.85rem;padding:1rem 0;">No details yet. <a href="#" onclick="openPlanModal();return false;" style="color:var(--primary);">Edit the plan</a> to add dietary &amp; lifestyle guidance.</p>
+                {% endif %}
+            </div>
+
+            <!-- Supplements tab -->
+            <div id="plan-supplements" class="plan-tab-content" style="display:none;">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:0.75rem;">
+                    <button onclick="openAddSuppModal()" class="btn btn-sm btn-primary" style="font-size:0.78rem;"><i class="bi bi-plus-lg"></i> Add Supplement</button>
+                </div>
+                <div id="supp-list">
+                {% if active_plan.plan_supplements %}
+                    {% for ps in active_plan.plan_supplements %}
+                    <div id="ps-row-{{ ps.id }}" style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.65rem 0;border-bottom:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:500;font-size:0.88rem;">{{ ps.supplement.name }}</div>
+                            <div style="font-size:0.78rem;color:var(--text-secondary);">
+                                {% if ps.dose %}{{ ps.dose }}{% endif %}{% if ps.timing %} · {{ ps.timing }}{% endif %}{% if ps.frequency %} · {{ ps.frequency }}{% endif %}
+                            </div>
+                            {% if ps.special_notes %}<div style="font-size:0.75rem;color:var(--text-secondary);font-style:italic;">{{ ps.special_notes }}</div>{% endif %}
+                        </div>
+                        <button onclick="removePlanSupp({{ ps.id }})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:0.2rem 0.4rem;" title="Remove"><i class="bi bi-trash"></i></button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p id="supp-empty" style="text-align:center;color:var(--text-secondary);padding:1.5rem;font-size:0.85rem;">No supplements assigned yet.</p>
+                {% endif %}
+                </div>
+            </div>
+
+            <!-- Recipes tab -->
+            <div id="plan-recipes" class="plan-tab-content" style="display:none;">
+                <div style="display:flex;justify-content:flex-end;margin-bottom:0.75rem;">
+                    <button onclick="openAddRecipeModal()" class="btn btn-sm btn-primary" style="font-size:0.78rem;"><i class="bi bi-plus-lg"></i> Add Recipe</button>
+                </div>
+                <div id="recipe-list">
+                {% if active_plan.plan_recipes %}
+                    {% for pr in active_plan.plan_recipes %}
+                    <div id="pr-row-{{ pr.id }}" style="display:flex;justify-content:space-between;align-items:flex-start;padding:0.65rem 0;border-bottom:1px solid var(--border);">
+                        <div>
+                            <div style="font-weight:500;font-size:0.88rem;">{{ pr.recipe.name }}</div>
+                            {% if pr.meal_slot %}<span style="background:var(--primary-light);color:var(--primary-dark);font-size:0.7rem;border-radius:10px;padding:2px 8px;">{{ pr.meal_slot }}</span>{% endif %}
+                        </div>
+                        <button onclick="removePlanRecipe({{ pr.id }})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:0.2rem 0.4rem;" title="Remove"><i class="bi bi-trash"></i></button>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p id="recipe-empty" style="text-align:center;color:var(--text-secondary);padding:1.5rem;font-size:0.85rem;">No recipes assigned yet.</p>
+                {% endif %}
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Empty state -->
+            <div style="text-align:center;padding:2.5rem 1rem;">
+                <i class="bi bi-clipboard2-pulse" style="font-size:2.5rem;color:var(--primary);opacity:0.35;display:block;margin-bottom:0.75rem;"></i>
+                <p style="color:var(--text-secondary);font-size:0.88rem;margin-bottom:1rem;">No consultation plan yet. Create one to assign supplements, recipes, and dietary guidance.</p>
+                <button onclick="openPlanModal()" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Create Consultation Plan</button>
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Recent Check-Ins -->
         <div class="card">
             <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">
@@ -178,28 +315,27 @@
 
     <!-- Sidebar -->
     <div>
-        <!-- Active Plan -->
+        <!-- Active Plan Summary -->
         <div class="card" style="margin-bottom:1rem;">
             <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:0.75rem;">Current Plan</h2>
             {% if active_plan %}
-            <div style="font-weight:500;margin-bottom:0.35rem;">{{ active_plan.title }}</div>
+            <div style="font-weight:600;font-size:0.9rem;color:var(--primary-dark);margin-bottom:0.25rem;">{{ active_plan.title }}</div>
             {% if active_plan.start_date %}
-            <div style="font-size:0.82rem;color:var(--text-secondary);">Started {{ active_plan.start_date.strftime('%b %d, %Y') }}</div>
+            <div style="font-size:0.78rem;color:var(--text-secondary);">Started {{ active_plan.start_date.strftime('%b %d, %Y') }}</div>
             {% endif %}
-            {% if active_plan.foods_to_avoid %}
-            <div style="margin-top:0.75rem;">
-                <div style="font-size:0.75rem;font-weight:600;color:var(--danger);margin-bottom:0.2rem;">AVOID</div>
-                <p style="font-size:0.82rem;white-space:pre-line;">{{ active_plan.foods_to_avoid }}</p>
+            <div style="display:flex;gap:0.75rem;margin-top:0.75rem;">
+                <div style="text-align:center;flex:1;background:#f8fafc;border-radius:8px;padding:0.5rem;">
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--primary);">{{ active_plan.plan_supplements|length }}</div>
+                    <div style="font-size:0.7rem;color:var(--text-secondary);">Supplements</div>
+                </div>
+                <div style="text-align:center;flex:1;background:#f8fafc;border-radius:8px;padding:0.5rem;">
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--primary);">{{ active_plan.plan_recipes|length }}</div>
+                    <div style="font-size:0.7rem;color:var(--text-secondary);">Recipes</div>
+                </div>
             </div>
-            {% endif %}
-            {% if active_plan.lifestyle_notes %}
-            <div style="margin-top:0.75rem;">
-                <div style="font-size:0.75rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">LIFESTYLE</div>
-                <p style="font-size:0.82rem;white-space:pre-line;">{{ active_plan.lifestyle_notes }}</p>
-            </div>
-            {% endif %}
             {% else %}
-            <p style="font-size:0.85rem;color:var(--text-secondary);">No active plan.</p>
+            <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:0.75rem;">No active plan.</p>
+            <button onclick="openPlanModal()" class="btn btn-sm btn-primary" style="width:100%;font-size:0.8rem;"><i class="bi bi-plus-lg"></i> Create Plan</button>
             {% endif %}
         </div>
 
@@ -339,6 +475,124 @@
     </div>
 </div>
 
+<!-- Create / Edit Plan Modal -->
+<div id="planModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:14px;padding:1.5rem;width:100%;max-width:580px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:1.25rem;"><i class="bi bi-clipboard2-pulse" style="color:var(--primary);margin-right:0.4rem;"></i>
+            {% if active_plan %}Edit{% else %}Create{% endif %} Consultation Plan
+        </h2>
+        <div style="display:grid;gap:0.85rem;">
+            <div class="form-group">
+                <label style="font-size:0.82rem;font-weight:500;">Plan Title</label>
+                <input id="pl_title" type="text" value="{{ active_plan.title if active_plan else 'Initial Protocol' }}" placeholder="e.g. Initial Vata Protocol">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.85rem;">
+                <div class="form-group">
+                    <label style="font-size:0.82rem;font-weight:500;">Duration (weeks)</label>
+                    <input id="pl_duration" type="number" min="1" max="52" value="{{ active_plan.duration_weeks if active_plan and active_plan.duration_weeks else '' }}">
+                </div>
+                <div class="form-group">
+                    <label style="font-size:0.82rem;font-weight:500;">Start Date</label>
+                    <input id="pl_start" type="date" value="{{ active_plan.start_date.strftime('%Y-%m-%d') if active_plan and active_plan.start_date else '' }}">
+                </div>
+                <div class="form-group">
+                    <label style="font-size:0.82rem;font-weight:500;">End Date</label>
+                    <input id="pl_end" type="date" value="{{ active_plan.end_date.strftime('%Y-%m-%d') if active_plan and active_plan.end_date else '' }}">
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+                <div class="form-group">
+                    <label style="font-size:0.82rem;font-weight:500;color:var(--danger);">Foods to Avoid</label>
+                    <textarea id="pl_avoid" rows="3" placeholder="e.g. cold drinks, raw salads, fermented foods">{{ active_plan.foods_to_avoid or '' if active_plan else '' }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label style="font-size:0.82rem;font-weight:500;color:var(--success);">Foods to Include</label>
+                    <textarea id="pl_include" rows="3" placeholder="e.g. warm soups, ghee, cooked grains">{{ active_plan.foods_to_include or '' if active_plan else '' }}</textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <label style="font-size:0.82rem;font-weight:500;">Lifestyle Recommendations</label>
+                <textarea id="pl_lifestyle" rows="3" placeholder="e.g. daily Abhyanga, early bedtime, warm baths">{{ active_plan.lifestyle_notes or '' if active_plan else '' }}</textarea>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+                <div class="form-group">
+                    <label style="font-size:0.82rem;font-weight:500;">Breathing / Pranayama</label>
+                    <textarea id="pl_breathing" rows="2" placeholder="e.g. Nadi Shodhana 10 min AM">{{ active_plan.breathing_notes or '' if active_plan else '' }}</textarea>
+                </div>
+                <div class="form-group">
+                    <label style="font-size:0.82rem;font-weight:500;">Nasal Care / Nasya</label>
+                    <textarea id="pl_nasya" rows="2" placeholder="e.g. Sesame oil 2 drops each nostril AM">{{ active_plan.nasal_care_notes or '' if active_plan else '' }}</textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <label style="font-size:0.82rem;font-weight:500;">Follow-Up Notes</label>
+                <textarea id="pl_followup" rows="2" placeholder="e.g. Reassess in 3 weeks, check digestion first">{{ active_plan.followup_notes or '' if active_plan else '' }}</textarea>
+            </div>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1.25rem;">
+            <button onclick="document.getElementById('planModal').style.display='none'" class="btn btn-outline-secondary">Cancel</button>
+            <button onclick="savePlan()" class="btn btn-primary">Save Plan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Supplement Modal -->
+<div id="addSuppModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:14px;padding:1.5rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;"><i class="bi bi-capsule" style="color:var(--primary);margin-right:0.4rem;"></i>Add Supplement to Plan</h2>
+        <div class="form-group" style="margin-bottom:0.85rem;">
+            <label style="font-size:0.82rem;font-weight:500;">Search &amp; Select Supplement</label>
+            <input type="text" id="suppSearch" oninput="filterSuppSelect()" placeholder="Type to search…" style="margin-bottom:0.4rem;">
+            <select id="suppSelect" size="5" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.4rem;">
+                {% for s in all_supplements %}
+                <option value="{{ s.id }}">{{ s.name }}{% if s.brand %} — {{ s.brand }}{% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;">
+            <div class="form-group"><label style="font-size:0.82rem;font-weight:500;">Dose</label><input id="supp_dose" type="text" placeholder="e.g. 500mg, 1 tsp"></div>
+            <div class="form-group"><label style="font-size:0.82rem;font-weight:500;">Timing</label><input id="supp_timing" type="text" placeholder="e.g. Before meals, AM"></div>
+            <div class="form-group"><label style="font-size:0.82rem;font-weight:500;">Frequency</label><input id="supp_freq" type="text" placeholder="e.g. Twice daily, Daily"></div>
+            <div class="form-group"><label style="font-size:0.82rem;font-weight:500;">Special Notes</label><input id="supp_notes" type="text" placeholder="e.g. With warm milk"></div>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1rem;">
+            <button onclick="document.getElementById('addSuppModal').style.display='none'" class="btn btn-outline-secondary">Cancel</button>
+            <button onclick="addSuppToPlan()" class="btn btn-primary">Add to Plan</button>
+        </div>
+    </div>
+</div>
+
+<!-- Add Recipe Modal -->
+<div id="addRecipeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:14px;padding:1.5rem;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
+        <h2 style="font-size:1rem;font-weight:600;margin-bottom:1rem;"><i class="bi bi-bowl-hot" style="color:var(--primary);margin-right:0.4rem;"></i>Add Recipe to Plan</h2>
+        <div class="form-group" style="margin-bottom:0.85rem;">
+            <label style="font-size:0.82rem;font-weight:500;">Search &amp; Select Recipe</label>
+            <input type="text" id="recipeSearch" oninput="filterRecipeSelect()" placeholder="Type to search…" style="margin-bottom:0.4rem;">
+            <select id="recipeSelect" size="5" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:0.4rem;">
+                {% for r in all_recipes %}
+                <option value="{{ r.id }}">{{ r.name }}{% if r.meal_type %} ({{ r.meal_type }}){% endif %}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label style="font-size:0.82rem;font-weight:500;">Meal Slot</label>
+            <select id="recipe_slot">
+                <option value="">— Select —</option>
+                <option>Breakfast</option>
+                <option>Lunch</option>
+                <option>Dinner</option>
+                <option>Tea</option>
+                <option>Snack</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:flex-end;margin-top:1rem;">
+            <button onclick="document.getElementById('addRecipeModal').style.display='none'" class="btn btn-outline-secondary">Cancel</button>
+            <button onclick="addRecipeToPlan()" class="btn btn-primary">Add to Plan</button>
+        </div>
+    </div>
+</div>
+
 <!-- Follow-Up Modal -->
 <div id="fuModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:2000;align-items:center;justify-content:center;">
     <div style="background:white;border-radius:12px;padding:1.5rem;width:100%;max-width:400px;">
@@ -415,10 +669,160 @@ function saveProfileEdit() {
 }
 
 // Close modals on backdrop click
-['editPatientModal','editProfileModal','fuModal'].forEach(id => {
+['editPatientModal','editProfileModal','fuModal','planModal','addSuppModal','addRecipeModal'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
 });
+
+// ── Plan Builder ──────────────────────────────────────────────────────────────
+function openPlanModal() {
+    document.getElementById('planModal').style.display = 'flex';
+}
+
+function savePlan() {
+    fetch('/api/patients/{{ patient.id }}/plan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            title:          document.getElementById('pl_title').value,
+            duration_weeks: document.getElementById('pl_duration').value,
+            start_date:     document.getElementById('pl_start').value,
+            end_date:       document.getElementById('pl_end').value,
+            foods_to_avoid: document.getElementById('pl_avoid').value,
+            foods_to_include: document.getElementById('pl_include').value,
+            lifestyle_notes: document.getElementById('pl_lifestyle').value,
+            breathing_notes: document.getElementById('pl_breathing').value,
+            nasal_care_notes: document.getElementById('pl_nasya').value,
+            followup_notes:  document.getElementById('pl_followup').value,
+        })
+    }).then(r => r.json()).then(() => location.reload());
+}
+
+function switchPlanTab(tab) {
+    ['details','supplements','recipes'].forEach(t => {
+        document.getElementById('plan-' + t).style.display = (t === tab) ? '' : 'none';
+        document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    });
+}
+
+// ── Supplement assign ─────────────────────────────────────────────────────────
+function openAddSuppModal() {
+    document.getElementById('suppSearch').value = '';
+    filterSuppSelect();
+    document.getElementById('supp_dose').value = '';
+    document.getElementById('supp_timing').value = '';
+    document.getElementById('supp_freq').value = '';
+    document.getElementById('supp_notes').value = '';
+    document.getElementById('addSuppModal').style.display = 'flex';
+}
+
+function filterSuppSelect() {
+    const q = document.getElementById('suppSearch').value.toLowerCase();
+    Array.from(document.getElementById('suppSelect').options).forEach(opt => {
+        opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+
+function addSuppToPlan() {
+    const sel = document.getElementById('suppSelect');
+    if (!sel.value) { alert('Please select a supplement.'); return; }
+    fetch('/api/patients/{{ patient.id }}/plan/supplements', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            supplement_id: sel.value,
+            dose:          document.getElementById('supp_dose').value,
+            timing:        document.getElementById('supp_timing').value,
+            frequency:     document.getElementById('supp_freq').value,
+            special_notes: document.getElementById('supp_notes').value,
+        })
+    }).then(r => r.json()).then(data => {
+        if (data.error) { alert(data.error); return; }
+        // Remove empty state if present
+        const empty = document.getElementById('supp-empty');
+        if (empty) empty.remove();
+        // Append row
+        const list = document.getElementById('supp-list');
+        const row = document.createElement('div');
+        row.id = 'ps-row-' + data.id;
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;padding:0.65rem 0;border-bottom:1px solid var(--border);';
+        const details = [document.getElementById('supp_dose').value, document.getElementById('supp_timing').value, document.getElementById('supp_freq').value].filter(Boolean).join(' · ');
+        row.innerHTML = `<div><div style="font-weight:500;font-size:0.88rem;">${data.name}</div><div style="font-size:0.78rem;color:var(--text-secondary);">${details}</div></div><button onclick="removePlanSupp(${data.id})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:0.2rem 0.4rem;"><i class="bi bi-trash"></i></button>`;
+        list.appendChild(row);
+        // Update badge count
+        const badge = document.querySelector('#tab-supplements span');
+        if (badge) badge.textContent = parseInt(badge.textContent||0) + 1;
+        document.getElementById('addSuppModal').style.display = 'none';
+    });
+}
+
+function removePlanSupp(id) {
+    if (!confirm('Remove this supplement from the plan?')) return;
+    fetch('/api/plan/supplements/' + id, {method: 'DELETE'})
+        .then(r => r.json()).then(data => {
+            if (data.status === 'removed') {
+                const row = document.getElementById('ps-row-' + id);
+                if (row) row.remove();
+                const badge = document.querySelector('#tab-supplements span');
+                if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent||1) - 1);
+            }
+        });
+}
+
+// ── Recipe assign ─────────────────────────────────────────────────────────────
+function openAddRecipeModal() {
+    document.getElementById('recipeSearch').value = '';
+    filterRecipeSelect();
+    document.getElementById('recipe_slot').value = '';
+    document.getElementById('addRecipeModal').style.display = 'flex';
+}
+
+function filterRecipeSelect() {
+    const q = document.getElementById('recipeSearch').value.toLowerCase();
+    Array.from(document.getElementById('recipeSelect').options).forEach(opt => {
+        opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
+    });
+}
+
+function addRecipeToPlan() {
+    const sel = document.getElementById('recipeSelect');
+    if (!sel.value) { alert('Please select a recipe.'); return; }
+    fetch('/api/patients/{{ patient.id }}/plan/recipes', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            recipe_id: sel.value,
+            meal_slot: document.getElementById('recipe_slot').value,
+        })
+    }).then(r => r.json()).then(data => {
+        if (data.error) { alert(data.error); return; }
+        const empty = document.getElementById('recipe-empty');
+        if (empty) empty.remove();
+        const list = document.getElementById('recipe-list');
+        const row = document.createElement('div');
+        row.id = 'pr-row-' + data.id;
+        row.style.cssText = 'display:flex;justify-content:space-between;align-items:flex-start;padding:0.65rem 0;border-bottom:1px solid var(--border);';
+        const slotHtml = data.meal_slot ? `<span style="background:var(--primary-light);color:var(--primary-dark);font-size:0.7rem;border-radius:10px;padding:2px 8px;">${data.meal_slot}</span>` : '';
+        row.innerHTML = `<div><div style="font-weight:500;font-size:0.88rem;">${data.name}</div>${slotHtml}</div><button onclick="removePlanRecipe(${data.id})" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;padding:0.2rem 0.4rem;"><i class="bi bi-trash"></i></button>`;
+        list.appendChild(row);
+        const badge = document.querySelector('#tab-recipes span');
+        if (badge) badge.textContent = parseInt(badge.textContent||0) + 1;
+        document.getElementById('addRecipeModal').style.display = 'none';
+    });
+}
+
+function removePlanRecipe(id) {
+    if (!confirm('Remove this recipe from the plan?')) return;
+    fetch('/api/plan/recipes/' + id, {method: 'DELETE'})
+        .then(r => r.json()).then(data => {
+            if (data.status === 'removed') {
+                const row = document.getElementById('pr-row-' + id);
+                if (row) row.remove();
+                const badge = document.querySelector('#tab-recipes span');
+                if (badge) badge.textContent = Math.max(0, parseInt(badge.textContent||1) - 1);
+            }
+        });
+}
 
 function saveFollowUp() {
     const d = document.getElementById('fuDate').value;
