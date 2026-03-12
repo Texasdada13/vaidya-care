@@ -1,21 +1,94 @@
 {% extends 'base.html' %}
 {% block title %}Recipes — Vaidya Care{% endblock %}
 {% block content %}
-<div class="page-header"><h1>Recipe Library</h1></div>
+<div class="page-header">
+    <div>
+        <h1>Recipe Library</h1>
+        <p>{{ recipes|length }} recipe{{ 's' if recipes|length != 1 else '' }}</p>
+    </div>
+</div>
+
+<div class="recipe-filter-bar">
+    <input type="text" id="recipeSearch" class="recipe-search" placeholder="Search recipes or ingredients..."
+        oninput="filterRecipes()">
+    <div class="recipe-tabs">
+        <button class="recipe-tab active" data-filter="all" onclick="setTab(this,'all')">All</button>
+        <button class="recipe-tab" data-filter="Breakfast" onclick="setTab(this,'Breakfast')">Breakfast</button>
+        <button class="recipe-tab" data-filter="Lunch" onclick="setTab(this,'Lunch')">Lunch</button>
+        <button class="recipe-tab" data-filter="Dinner" onclick="setTab(this,'Dinner')">Dinner</button>
+        <button class="recipe-tab" data-filter="Tea" onclick="setTab(this,'Tea')">Tea</button>
+        <button class="recipe-tab" data-filter="Snack" onclick="setTab(this,'Snack')">Snack</button>
+    </div>
+</div>
+
 {% set meal_types = ['Breakfast','Lunch','Dinner','Tea','Snack'] %}
 {% for meal_type in meal_types %}
 {% set meal_recipes = recipes | selectattr('meal_type','equalto',meal_type) | list %}
 {% if meal_recipes %}
-<h2 style="font-size:0.85rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin:1.25rem 0 0.75rem;">{{ meal_type }}</h2>
-<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin-bottom:1rem;">
-{% for r in meal_recipes %}
-<div class="card">
-    <div style="font-weight:600;margin-bottom:0.35rem;">{{ r.name }}</div>
-    {% if r.ingredients %}<p style="font-size:0.82rem;color:var(--text-secondary);margin-bottom:0.5rem;"><strong>Ingredients:</strong> {{ r.ingredients }}</p>{% endif %}
-    {% if r.instructions %}<p style="font-size:0.82rem;color:var(--text-secondary);">{{ r.instructions }}</p>{% endif %}
-</div>
-{% endfor %}
+<div class="recipe-section" data-meal="{{ meal_type }}">
+    <h2 class="recipe-section-label recipe-{{ meal_type|lower }}-label">{{ meal_type }}</h2>
+    <div class="recipe-grid">
+    {% for r in meal_recipes %}
+    <div class="recipe-card recipe-{{ meal_type|lower }}-card"
+         data-meal="{{ meal_type }}"
+         data-search="{{ r.name|lower }} {{ (r.ingredients or '')|lower }}">
+        <div class="recipe-card-header">
+            <span class="recipe-card-name">{{ r.name }}</span>
+            <span class="recipe-meal-badge recipe-badge-{{ meal_type|lower }}">{{ meal_type }}</span>
+        </div>
+        {% if r.ingredients %}
+        <div class="recipe-ingredients">
+            <div class="recipe-field-label">Ingredients</div>
+            <p>{{ r.ingredients }}</p>
+        </div>
+        {% endif %}
+        {% if r.instructions %}
+        <div class="recipe-instructions-toggle" onclick="toggleInstructions(this)">
+            <span>Instructions</span>
+            <i class="bi bi-chevron-down"></i>
+        </div>
+        <div class="recipe-instructions-body">
+            <p>{{ r.instructions }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    </div>
 </div>
 {% endif %}
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+let activeFilter = 'all';
+
+function setTab(btn, filter) {
+    document.querySelectorAll('.recipe-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = filter;
+    filterRecipes();
+}
+
+function filterRecipes() {
+    const q = document.getElementById('recipeSearch').value.toLowerCase();
+    document.querySelectorAll('.recipe-card').forEach(card => {
+        const matchMeal = activeFilter === 'all' || card.dataset.meal === activeFilter;
+        const matchSearch = !q || card.dataset.search.includes(q);
+        card.style.display = (matchMeal && matchSearch) ? '' : 'none';
+    });
+    document.querySelectorAll('.recipe-section').forEach(section => {
+        const anyVisible = [...section.querySelectorAll('.recipe-card')].some(c => c.style.display !== 'none');
+        section.style.display = anyVisible ? '' : 'none';
+    });
+}
+
+function toggleInstructions(toggle) {
+    const body = toggle.nextElementSibling;
+    const icon = toggle.querySelector('i');
+    body.classList.toggle('open');
+    icon.classList.toggle('bi-chevron-down');
+    icon.classList.toggle('bi-chevron-up');
+}
+</script>
 {% endblock %}
