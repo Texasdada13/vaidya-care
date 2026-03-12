@@ -1027,3 +1027,23 @@ html, body { height: 100%; }
     margin-bottom: 1rem; padding-bottom: 0.5rem;
     border-bottom: 1px solid var(--border);
 }
+
+/* ========== SUPPLEMENT LIBRARY ========== */
+.supp-card {
+    background: white; border-radius: 12px; padding: 1rem;
+    border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border-left: 4px solid #e2e8f0; transition: box-shadow 0.15s;
+}
+.supp-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.09); }
+.supp-herbal { border-left-color: #059669; }
+.supp-tablet { border-left-color: #987654; }
+.supp-tea    { border-left-color: #14b8a6; }
+
+.supp-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    padding: 0.2rem 0.55rem; border-radius: 9999px; white-space: nowrap; flex-shrink: 0;
+}
+.supp-badge-herbal { background: #d1fae5; color: #065f46; }
+.supp-badge-tablet { background: var(--primary-light); color: var(--primary-dark); }
+.supp-badge-tea    { background: #ccfbf1; color: #0f766e; }
