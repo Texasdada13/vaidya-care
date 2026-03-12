@@ -1,6 +1,7 @@
 <!-- AI Chat Floating Button -->
 <button class="chat-fab" onclick="toggleChat()" title="AI Assistant">
-    <i class="bi bi-chat-dots-fill"></i>
+    <i class="bi bi-stars"></i>
+    <span class="chat-fab-label">AI Assistant</span>
 </button>
 
 <!-- Chat Panel -->
@@ -53,9 +54,12 @@ let chatSessionId = 'session-' + Date.now();
 function toggleChat() {
     const panel = document.getElementById('chatPanel');
     const fab   = document.querySelector('.chat-fab');
+    const sidebarBtn = document.getElementById('sidebarAiBtn');
     panel.classList.toggle('open');
     if (fab) fab.classList.toggle('hidden');
-    if (panel.classList.contains('open')) {
+    const isOpen = panel.classList.contains('open');
+    if (sidebarBtn) sidebarBtn.classList.toggle('active', isOpen);
+    if (isOpen) {
         document.getElementById('chatInput').focus();
         loadSuggestions();
     }

@@ -644,15 +644,23 @@ body {
 /* ========== AI CHAT PANEL ========== */
 .chat-fab {
     position: fixed; bottom: 1.5rem; right: 1.5rem;
-    width: 56px; height: 56px; border-radius: 50%;
+    height: 48px; border-radius: 24px;
+    padding: 0 1.25rem 0 1rem;
     background: var(--primary); color: white; border: none;
-    font-size: 1.25rem; cursor: pointer; z-index: 1500;
-    box-shadow: 0 4px 12px rgba(152, 118, 84, 0.4);
-    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; cursor: pointer; z-index: 1500;
+    box-shadow: 0 4px 16px rgba(152, 118, 84, 0.45);
+    display: flex; align-items: center; gap: 0.5rem;
     transition: all 0.2s;
+    white-space: nowrap;
 }
-.chat-fab:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(152, 118, 84, 0.5); }
+.chat-fab:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(152, 118, 84, 0.5); }
 .chat-fab.hidden { display: none; }
+.chat-fab-label { font-size: 0.88rem; font-weight: 600; letter-spacing: 0.01em; }
+
+/* Sidebar AI nav link */
+.nav-link-ai { color: rgba(255,255,255,0.75) !important; }
+.nav-link-ai i { color: var(--sidebar-accent) !important; }
+.nav-link-ai:hover, .nav-link-ai.active { background: rgba(152,118,84,0.15) !important; color: white !important; }
 
 .chat-panel {
     position: fixed; bottom: 0; right: 1.5rem;
