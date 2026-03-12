@@ -76,28 +76,57 @@
             {% endif %}
         </div>
 
-        <!-- Recent Check-Ins -->
+        <!-- Patient Compliance Summary -->
         <div class="card">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                <h2 style="font-size:1rem;font-weight:600;">Recent Check-Ins</h2>
-                <span style="font-size:0.82rem;color:var(--text-secondary);">Last 7 days</span>
+                <h2 style="font-size:1rem;font-weight:600;">Patient Compliance</h2>
+                <span style="font-size:0.82rem;color:var(--text-secondary);">7-day summary</span>
             </div>
-            {% if recent_checkins %}
-                {% for ci in recent_checkins %}
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0;border-bottom:1px solid var(--border);">
-                    <div>
-                        <a href="{{ url_for('patient_detail', patient_id=ci.patient_id) }}" style="font-weight:500;text-decoration:none;color:var(--text-primary);">
-                            {{ ci.patient.full_name }}
-                        </a>
-                        <div style="font-size:0.8rem;color:var(--text-secondary);">{{ ci.date.strftime('%b %d') }}</div>
+            {% if patient_summaries %}
+                {% for s in patient_summaries %}
+                <a href="{{ url_for('patient_detail', patient_id=s.patient.id) }}" style="display:block;text-decoration:none;color:inherit;">
+                <div style="display:flex;align-items:center;gap:1rem;padding:0.75rem 0;border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+                    <!-- Name + date -->
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:500;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ s.patient.full_name }}</div>
+                        <div style="font-size:0.75rem;color:var(--text-secondary);">Last: {{ s.last_date.strftime('%b %d') }} · {{ s.checkin_count }} check-in{{ 's' if s.checkin_count != 1 else '' }}</div>
                     </div>
-                    <div style="text-align:right;">
-                        <div style="font-size:0.85rem;font-weight:600;color:{% if ci.habit_completion_pct >= 70 %}var(--success){% elif ci.habit_completion_pct >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
-                            {{ ci.habit_completion_pct }}%
+                    <!-- Sparkline -->
+                    <svg viewBox="0 0 60 24" style="width:60px;height:24px;flex-shrink:0;">
+                        {% set spark = s.spark %}
+                        {% set sn = spark|length %}
+                        {% if sn > 1 %}
+                        {% set sw = 60 / (sn - 1) %}
+                        <polyline fill="none"
+                            stroke="{% if s.avg_habit >= 70 %}#059669{% elif s.avg_habit >= 40 %}#f59e0b{% else %}#dc2626{% endif %}"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            points="{% for i in range(sn) %}{{ (i * sw)|round(1) }},{{ (22 - spark[i] * 0.2)|round(1) }} {% endfor %}"/>
+                        {% endif %}
+                    </svg>
+                    <!-- Avg habit % + trend -->
+                    <div style="text-align:right;flex-shrink:0;">
+                        <div style="font-size:1rem;font-weight:700;color:{% if s.avg_habit >= 70 %}var(--success){% elif s.avg_habit >= 40 %}var(--warning){% else %}var(--danger){% endif %};">
+                            {{ s.avg_habit }}%
                         </div>
-                        <div style="font-size:0.75rem;color:var(--text-secondary);">habits</div>
+                        <div style="font-size:0.72rem;color:var(--text-secondary);">
+                            {% if s.trend > 5 %}<span style="color:var(--success);">↑ improving</span>
+                            {% elif s.trend < -5 %}<span style="color:var(--danger);">↓ declining</span>
+                            {% else %}<span>→ stable</span>{% endif %}
+                        </div>
+                    </div>
+                    <!-- Latest symptom dots -->
+                    <div style="display:flex;flex-direction:column;gap:2px;flex-shrink:0;">
+                        {% for label, score in [('D',s.digestion),('E',s.energy),('U',s.urinary),('S',s.sinus)] %}
+                        <div style="display:flex;align-items:center;gap:3px;">
+                            <span style="font-size:0.6rem;color:var(--text-secondary);width:8px;">{{ label }}</span>
+                            <div style="width:28px;height:4px;border-radius:2px;background:#e2e8f0;overflow:hidden;">
+                                {% if score %}<div style="width:{{ (score/5*100)|round }}%;height:100%;background:{% if score >= 4 %}#059669{% elif score >= 3 %}#f59e0b{% else %}#dc2626{% endif %};"></div>{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
+                </a>
                 {% endfor %}
             {% else %}
                 <div style="text-align:center;padding:2rem;color:var(--text-secondary);">

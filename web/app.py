@@ -98,16 +98,37 @@ def dashboard():
         .order_by(FollowUp.scheduled_date)
         .all())
 
-    # Recent check-ins (last 7 days)
+    # Per-patient compliance summaries (last 7 days)
     from datetime import timedelta
     week_ago = today_date - timedelta(days=7)
-    recent_checkins = (DailyCheckIn.query
-        .join(Patient)
-        .filter(Patient.practitioner_id == current_user.id,
-                DailyCheckIn.date >= week_ago)
-        .order_by(DailyCheckIn.submitted_at.desc())
-        .limit(10)
-        .all())
+    all_patients = Patient.query.filter_by(practitioner_id=current_user.id, active=True).all()
+    patient_summaries = []
+    for p in all_patients:
+        cis = p.checkins.filter(DailyCheckIn.date >= week_ago).order_by(DailyCheckIn.date).all()
+        if not cis:
+            continue
+        habits = [c.habit_completion_pct for c in cis]
+        avg_habit = round(sum(habits) / len(habits))
+        # Trend: compare first half vs second half
+        mid = len(habits) // 2
+        trend = 0
+        if mid > 0:
+            first_avg = sum(habits[:mid]) / mid
+            second_avg = sum(habits[mid:]) / max(len(habits[mid:]), 1)
+            trend = second_avg - first_avg
+        latest = cis[-1]
+        patient_summaries.append({
+            'patient': p,
+            'checkin_count': len(cis),
+            'avg_habit': avg_habit,
+            'trend': trend,
+            'last_date': latest.date,
+            'digestion': latest.digestion_score,
+            'energy': latest.energy_score,
+            'urinary': latest.urinary_score,
+            'sinus': latest.sinus_score,
+            'spark': [c.habit_completion_pct for c in cis],
+        })
 
     # Patient count
     total_patients = Patient.query.filter_by(practitioner_id=current_user.id, active=True).count()
@@ -130,7 +151,7 @@ def dashboard():
     return render_template('dashboard.html',
         active_page='dashboard',
         followups_due=followups_due,
-        recent_checkins=recent_checkins,
+        patient_summaries=patient_summaries,
         total_patients=total_patients,
         active_plans=active_plans,
         patients_due_checkin=patients_due_checkin,
