@@ -8,7 +8,9 @@
     </div>
 </div>
 
-<form method="POST" style="max-width:720px;">
+<form method="POST" style="max-width:760px;">
+
+    <!-- Contact Details -->
     <div class="card" style="margin-bottom:1rem;">
         <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Contact Details</h2>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
@@ -29,6 +31,71 @@
         </div>
     </div>
 
+    <!-- Chief Complaints & History -->
+    <div class="card" style="margin-bottom:1rem;">
+        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Chief Complaints &amp; History</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group" style="grid-column:1/-1;">
+                <label>Chief Complaints</label>
+                <textarea name="chief_complaints" rows="3" placeholder="e.g. Fatigue, bloating, high cholesterol, poor sleep…"></textarea>
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+                <label>Medical History</label>
+                <textarea name="medical_history" rows="2" placeholder="e.g. Hypothyroidism (2018), Type 2 diabetes (controlled)…"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ayurvedic Assessment -->
+    <div class="card" style="margin-bottom:1rem;">
+        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Ayurvedic Assessment</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+                <label>Primary Dosha</label>
+                <select name="dosha_primary" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+                    <option value="">Select</option>
+                    <option>Vata</option><option>Pitta</option><option>Kapha</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Secondary Dosha</label>
+                <select name="dosha_secondary" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+                    <option value="">None / Unknown</option>
+                    <option>Vata</option><option>Pitta</option><option>Kapha</option>
+                </select>
+            </div>
+            <div class="form-group" style="grid-column:1/-1;">
+                <label>Dosha Imbalance Notes</label>
+                <textarea name="dosha_imbalances" rows="2" placeholder="e.g. Vata-Kapha imbalance — dry skin, sluggish digestion, anxiety…"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Agni (Digestive Fire)</label>
+                <textarea name="agni_assessment" rows="2" placeholder="e.g. Manda agni — slow digestion, heaviness after meals…"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Ama (Toxin Accumulation)</label>
+                <textarea name="ama_assessment" rows="2" placeholder="e.g. Coated tongue, brain fog, joint stiffness…"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lab Values -->
+    <div class="card" style="margin-bottom:1rem;">
+        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:0.25rem;">Lab Values</h2>
+        <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;">Optional — leave blank if not yet available.</p>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+            <div class="form-group"><label>Total Cholesterol</label><input type="number" step="0.1" name="cholesterol_total" placeholder="mg/dL"></div>
+            <div class="form-group"><label>HDL</label><input type="number" step="0.1" name="hdl" placeholder="mg/dL"></div>
+            <div class="form-group"><label>LDL</label><input type="number" step="0.1" name="ldl" placeholder="mg/dL"></div>
+            <div class="form-group"><label>HbA1c</label><input type="number" step="0.01" name="hba1c" placeholder="%"></div>
+            <div class="form-group"><label>Creatinine</label><input type="number" step="0.01" name="creatinine" placeholder="mg/dL"></div>
+            <div class="form-group"><label>eGFR</label><input type="number" step="0.1" name="egfr" placeholder="mL/min"></div>
+            <div class="form-group"><label>Testosterone</label><input type="number" step="0.1" name="testosterone" placeholder="ng/dL"></div>
+            <div class="form-group"><label>TSH</label><input type="number" step="0.01" name="tsh" placeholder="mIU/L"></div>
+        </div>
+    </div>
+
+    <!-- Lifestyle -->
     <div class="card" style="margin-bottom:1rem;">
         <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Lifestyle</h2>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
@@ -45,7 +112,7 @@
         </div>
     </div>
 
-    <div style="display:flex;gap:1rem;justify-content:flex-end;">
+    <div style="display:flex;gap:1rem;justify-content:flex-end;margin-bottom:2rem;">
         <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary">Cancel</a>
         <button type="submit" class="btn btn-primary">Save Patient</button>
     </div>

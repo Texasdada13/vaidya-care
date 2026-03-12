@@ -36,10 +36,37 @@
                 <p style="font-size:0.88rem;white-space:pre-line;">{{ profile.chief_complaints }}</p>
             </div>
             {% endif %}
+            {% if profile.dosha_primary or profile.dosha_secondary %}
+            <div style="margin-bottom:0.75rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.4rem;">DOSHA</div>
+                <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+                    {% if profile.dosha_primary %}<span class="badge" style="background:var(--primary-light);color:var(--primary-dark);">{{ profile.dosha_primary }}</span>{% endif %}
+                    {% if profile.dosha_secondary %}<span class="badge" style="background:#f1f5f9;color:var(--text-secondary);">{{ profile.dosha_secondary }}</span>{% endif %}
+                </div>
+            </div>
+            {% endif %}
             {% if profile.dosha_imbalances %}
             <div style="margin-bottom:0.75rem;">
                 <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">AYURVEDIC OBSERVATIONS</div>
                 <p style="font-size:0.88rem;white-space:pre-line;">{{ profile.dosha_imbalances }}</p>
+            </div>
+            {% endif %}
+            {% if profile.agni_assessment %}
+            <div style="margin-bottom:0.75rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">AGNI</div>
+                <p style="font-size:0.88rem;white-space:pre-line;">{{ profile.agni_assessment }}</p>
+            </div>
+            {% endif %}
+            {% if profile.ama_assessment %}
+            <div style="margin-bottom:0.75rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">AMA</div>
+                <p style="font-size:0.88rem;white-space:pre-line;">{{ profile.ama_assessment }}</p>
+            </div>
+            {% endif %}
+            {% if profile.medical_history %}
+            <div style="margin-bottom:0.75rem;">
+                <div style="font-size:0.78rem;font-weight:600;color:var(--text-secondary);margin-bottom:0.2rem;">MEDICAL HISTORY</div>
+                <p style="font-size:0.88rem;white-space:pre-line;">{{ profile.medical_history }}</p>
             </div>
             {% endif %}
             {% if profile.cholesterol_total or profile.hdl %}

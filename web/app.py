@@ -195,8 +195,30 @@ def patient_new():
         db.session.add(p)
         db.session.flush()
 
-        # Create empty health profile
-        hp = HealthProfile(patient_id=p.id)
+        # Create health profile with form data
+        def _float(key):
+            v = request.form.get(key, '').strip()
+            try: return float(v) if v else None
+            except ValueError: return None
+
+        hp = HealthProfile(
+            patient_id=p.id,
+            chief_complaints=request.form.get('chief_complaints', '').strip() or None,
+            medical_history=request.form.get('medical_history', '').strip() or None,
+            dosha_primary=request.form.get('dosha_primary') or None,
+            dosha_secondary=request.form.get('dosha_secondary') or None,
+            dosha_imbalances=request.form.get('dosha_imbalances', '').strip() or None,
+            agni_assessment=request.form.get('agni_assessment', '').strip() or None,
+            ama_assessment=request.form.get('ama_assessment', '').strip() or None,
+            cholesterol_total=_float('cholesterol_total'),
+            hdl=_float('hdl'),
+            ldl=_float('ldl'),
+            hba1c=_float('hba1c'),
+            creatinine=_float('creatinine'),
+            egfr=_float('egfr'),
+            testosterone=_float('testosterone'),
+            tsh=_float('tsh'),
+        )
         db.session.add(hp)
 
         # Generate check-in token
