@@ -185,6 +185,8 @@ def patient_new():
             diet_pattern=request.form.get('diet_pattern', '').strip(),
             alcohol_notes=request.form.get('alcohol_notes', '').strip(),
             caffeine_notes=request.form.get('caffeine_notes', '').strip(),
+            sleep_notes=request.form.get('sleep_notes', '').strip() or None,
+            stress_level=request.form.get('stress_level') or None,
         )
         dob_str = request.form.get('dob')
         if dob_str:
@@ -205,6 +207,8 @@ def patient_new():
             patient_id=p.id,
             chief_complaints=request.form.get('chief_complaints', '').strip() or None,
             medical_history=request.form.get('medical_history', '').strip() or None,
+            current_medications=request.form.get('current_medications', '').strip() or None,
+            allergies=request.form.get('allergies', '').strip() or None,
             dosha_primary=request.form.get('dosha_primary') or None,
             dosha_secondary=request.form.get('dosha_secondary') or None,
             dosha_imbalances=request.form.get('dosha_imbalances', '').strip() or None,

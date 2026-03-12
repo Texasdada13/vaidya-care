@@ -1019,3 +1019,11 @@ html, body { height: 100%; }
 .recipe-instructions-body p {
     font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5; margin: 0;
 }
+
+/* ========== PATIENT FORM ========== */
+.form-section-title {
+    font-size: 0.82rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-secondary);
+    margin-bottom: 1rem; padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+}

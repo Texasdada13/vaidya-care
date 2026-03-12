@@ -52,6 +52,8 @@ class Patient(db.Model):
     diet_pattern     = db.Column(db.Text)
     alcohol_notes    = db.Column(db.String(200))
     caffeine_notes   = db.Column(db.String(200))
+    sleep_notes      = db.Column(db.String(200))
+    stress_level     = db.Column(db.String(20))          # Low / Moderate / High / Very High
 
     # Status
     active           = db.Column(db.Boolean, default=True)
@@ -106,10 +108,12 @@ class HealthProfile(db.Model):
     lab_notes         = db.Column(db.Text)
 
     # Chief complaints (free text)
-    chief_complaints  = db.Column(db.Text)
+    chief_complaints      = db.Column(db.Text)
 
     # Medical history
-    medical_history   = db.Column(db.Text)
+    medical_history       = db.Column(db.Text)
+    current_medications   = db.Column(db.Text)
+    allergies             = db.Column(db.String(500))
 
     # Ayurvedic observations
     dosha_primary     = db.Column(db.String(20))         # Vata / Pitta / Kapha

@@ -8,113 +8,250 @@
     </div>
 </div>
 
-<form method="POST" style="max-width:760px;">
+<form method="POST" id="patientForm">
+<div style="display:grid;grid-template-columns:1fr 320px;gap:1.5rem;align-items:start;">
 
-    <!-- Contact Details -->
-    <div class="card" style="margin-bottom:1rem;">
-        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Contact Details</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-            <div class="form-group"><label>First Name *</label><input type="text" name="first_name" required></div>
-            <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" required></div>
-            <div class="form-group"><label>Email</label><input type="email" name="email"></div>
-            <div class="form-group"><label>Phone</label><input type="tel" name="phone"></div>
-            <div class="form-group"><label>Date of Birth</label><input type="date" name="dob"></div>
-            <div class="form-group">
-                <label>Sex</label>
-                <select name="sex" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
-                    <option value="">Select</option>
-                    <option>Male</option><option>Female</option><option>Other</option>
-                </select>
+    <!-- ── LEFT: Form sections ── -->
+    <div>
+
+        <!-- Contact Details -->
+        <div class="card" style="margin-bottom:1rem;padding:1.25rem;">
+            <h2 class="form-section-title">Contact Details</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+                <div class="form-group"><label>First Name *</label><input type="text" name="first_name" id="f_first" required oninput="updatePreview()"></div>
+                <div class="form-group"><label>Last Name *</label><input type="text" name="last_name" id="f_last" required oninput="updatePreview()"></div>
+                <div class="form-group"><label>Email</label><input type="email" name="email" id="f_email" oninput="updatePreview()"></div>
+                <div class="form-group"><label>Phone</label><input type="tel" name="phone" id="f_phone" oninput="updatePreview()"></div>
+                <div class="form-group"><label>Date of Birth</label><input type="date" name="dob"></div>
+                <div class="form-group">
+                    <label>Sex</label>
+                    <select name="sex" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+                        <option value="">Select</option>
+                        <option>Male</option><option>Female</option><option>Other</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column:1/-1;"><label>Location (City, State)</label><input type="text" name="location" id="f_location" placeholder="e.g. Ocala, Florida" oninput="updatePreview()"></div>
+                <div class="form-group" style="grid-column:1/-1;"><label>Occupation</label><input type="text" name="occupation" id="f_occupation" oninput="updatePreview()"></div>
             </div>
-            <div class="form-group" style="grid-column:1/-1;"><label>Location (City, State)</label><input type="text" name="location" placeholder="e.g. Ocala, Florida"></div>
-            <div class="form-group" style="grid-column:1/-1;"><label>Occupation</label><input type="text" name="occupation"></div>
+        </div>
+
+        <!-- Chief Complaints & History -->
+        <div class="card" style="margin-bottom:1rem;padding:1.25rem;">
+            <h2 class="form-section-title">Chief Complaints &amp; History</h2>
+            <div style="display:grid;gap:0.85rem;">
+                <div class="form-group">
+                    <label>Chief Complaints</label>
+                    <textarea name="chief_complaints" id="f_complaints" rows="3" placeholder="e.g. Fatigue, bloating, high cholesterol, poor sleep…" oninput="updatePreview()"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Medical History</label>
+                    <textarea name="medical_history" rows="2" placeholder="e.g. Hypothyroidism (2018), Type 2 diabetes (controlled)…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Current Medications &amp; Supplements</label>
+                    <textarea name="current_medications" rows="2" placeholder="e.g. Metformin 500mg, Vitamin D3, Omega-3…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Allergies / Sensitivities</label>
+                    <input type="text" name="allergies" placeholder="e.g. Gluten intolerance, shellfish allergy…">
+                </div>
+            </div>
+        </div>
+
+        <!-- Ayurvedic Assessment -->
+        <div class="card" style="margin-bottom:1rem;padding:1.25rem;">
+            <h2 class="form-section-title">Ayurvedic Assessment</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+                <div class="form-group">
+                    <label>Primary Dosha</label>
+                    <select name="dosha_primary" id="f_dosha1" onchange="updatePreview()" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+                        <option value="">Select</option>
+                        <option>Vata</option><option>Pitta</option><option>Kapha</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Secondary Dosha</label>
+                    <select name="dosha_secondary" id="f_dosha2" onchange="updatePreview()" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+                        <option value="">None / Unknown</option>
+                        <option>Vata</option><option>Pitta</option><option>Kapha</option>
+                    </select>
+                </div>
+                <div class="form-group" style="grid-column:1/-1;">
+                    <label>Dosha Imbalance Notes</label>
+                    <textarea name="dosha_imbalances" rows="2" placeholder="e.g. Vata-Kapha imbalance — dry skin, sluggish digestion, anxiety…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Agni (Digestive Fire)</label>
+                    <textarea name="agni_assessment" rows="2" placeholder="e.g. Manda agni — slow digestion, heaviness after meals…"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Ama (Toxin Accumulation)</label>
+                    <textarea name="ama_assessment" rows="2" placeholder="e.g. Coated tongue, brain fog, joint stiffness…"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lab Values -->
+        <div class="card" style="margin-bottom:1rem;padding:1.25rem;">
+            <h2 class="form-section-title">Lab Values <span style="font-weight:400;font-size:0.78rem;color:var(--text-secondary);text-transform:none;letter-spacing:0;">— optional</span></h2>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.85rem;">
+                <div class="form-group"><label>Cholesterol</label><input type="number" step="0.1" name="cholesterol_total" id="f_chol" placeholder="mg/dL" oninput="updatePreview()"></div>
+                <div class="form-group"><label>HDL</label><input type="number" step="0.1" name="hdl" id="f_hdl" placeholder="mg/dL" oninput="updatePreview()"></div>
+                <div class="form-group"><label>LDL</label><input type="number" step="0.1" name="ldl" id="f_ldl" placeholder="mg/dL" oninput="updatePreview()"></div>
+                <div class="form-group"><label>HbA1c</label><input type="number" step="0.01" name="hba1c" id="f_hba1c" placeholder="%" oninput="updatePreview()"></div>
+                <div class="form-group"><label>Creatinine</label><input type="number" step="0.01" name="creatinine" placeholder="mg/dL"></div>
+                <div class="form-group"><label>eGFR</label><input type="number" step="0.1" name="egfr" placeholder="mL/min"></div>
+                <div class="form-group"><label>Testosterone</label><input type="number" step="0.1" name="testosterone" placeholder="ng/dL"></div>
+                <div class="form-group"><label>TSH</label><input type="number" step="0.01" name="tsh" placeholder="mIU/L"></div>
+            </div>
+        </div>
+
+        <!-- Lifestyle -->
+        <div class="card" style="margin-bottom:1rem;padding:1.25rem;">
+            <h2 class="form-section-title">Lifestyle</h2>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.85rem;">
+                <div class="form-group" style="grid-column:1/-1;">
+                    <label>Exercise Routine</label>
+                    <textarea name="exercise_notes" rows="2" placeholder="e.g. Weight lifting 4x/week, limited cardio"></textarea>
+                </div>
+                <div class="form-group" style="grid-column:1/-1;">
+                    <label>Diet Pattern</label>
+                    <textarea name="diet_pattern" rows="2" placeholder="e.g. Primarily non-vegetarian, inconsistent meal timing"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Sleep</label>
+                    <input type="text" name="sleep_notes" placeholder="e.g. 5–6 hrs, trouble falling asleep">
+                </div>
+                <div class="form-group">
+                    <label>Stress Level</label>
+                    <select name="stress_level" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
+                        <option value="">Select</option>
+                        <option>Low</option><option>Moderate</option><option>High</option><option>Very High</option>
+                    </select>
+                </div>
+                <div class="form-group"><label>Alcohol</label><input type="text" name="alcohol_notes" placeholder="e.g. Twice/month"></div>
+                <div class="form-group"><label>Caffeine / Nicotine</label><input type="text" name="caffeine_notes" placeholder="e.g. 2 coffees/day"></div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:1rem;justify-content:flex-end;margin-bottom:2rem;">
+            <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Patient</button>
         </div>
     </div>
 
-    <!-- Chief Complaints & History -->
-    <div class="card" style="margin-bottom:1rem;">
-        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Chief Complaints &amp; History</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-            <div class="form-group" style="grid-column:1/-1;">
-                <label>Chief Complaints</label>
-                <textarea name="chief_complaints" rows="3" placeholder="e.g. Fatigue, bloating, high cholesterol, poor sleep…"></textarea>
+    <!-- ── RIGHT: Live preview card ── -->
+    <div style="position:sticky;top:1.5rem;">
+        <div class="card" style="padding:1.25rem;">
+            <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-secondary);margin-bottom:1rem;">Patient Preview</div>
+
+            <!-- Name -->
+            <div id="prev_name" style="font-size:1.2rem;font-weight:700;color:var(--text-primary);margin-bottom:0.15rem;">—</div>
+            <div id="prev_sub" style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;">Fill in contact details above</div>
+
+            <!-- Dosha badges -->
+            <div id="prev_doshas" style="display:none;margin-bottom:0.85rem;"></div>
+
+            <!-- Complaints -->
+            <div id="prev_complaints_wrap" style="display:none;margin-bottom:0.85rem;">
+                <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:0.3rem;">Chief Complaints</div>
+                <p id="prev_complaints" style="font-size:0.82rem;color:var(--text-primary);line-height:1.5;margin:0;"></p>
             </div>
-            <div class="form-group" style="grid-column:1/-1;">
-                <label>Medical History</label>
-                <textarea name="medical_history" rows="2" placeholder="e.g. Hypothyroidism (2018), Type 2 diabetes (controlled)…"></textarea>
+
+            <!-- Lab tiles -->
+            <div id="prev_labs_wrap" style="display:none;">
+                <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:0.5rem;">Lab Values</div>
+                <div id="prev_labs" style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;"></div>
+            </div>
+
+            <!-- Placeholder hint -->
+            <div id="prev_hint" style="margin-top:1rem;padding:0.75rem;background:var(--primary-light);border-radius:8px;font-size:0.78rem;color:var(--primary-dark);line-height:1.5;">
+                <i class="bi bi-info-circle"></i> This preview updates as you fill in the form.
             </div>
         </div>
     </div>
 
-    <!-- Ayurvedic Assessment -->
-    <div class="card" style="margin-bottom:1rem;">
-        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Ayurvedic Assessment</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-            <div class="form-group">
-                <label>Primary Dosha</label>
-                <select name="dosha_primary" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
-                    <option value="">Select</option>
-                    <option>Vata</option><option>Pitta</option><option>Kapha</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Secondary Dosha</label>
-                <select name="dosha_secondary" style="width:100%;padding:0.6rem;border:1px solid var(--border);border-radius:8px;">
-                    <option value="">None / Unknown</option>
-                    <option>Vata</option><option>Pitta</option><option>Kapha</option>
-                </select>
-            </div>
-            <div class="form-group" style="grid-column:1/-1;">
-                <label>Dosha Imbalance Notes</label>
-                <textarea name="dosha_imbalances" rows="2" placeholder="e.g. Vata-Kapha imbalance — dry skin, sluggish digestion, anxiety…"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Agni (Digestive Fire)</label>
-                <textarea name="agni_assessment" rows="2" placeholder="e.g. Manda agni — slow digestion, heaviness after meals…"></textarea>
-            </div>
-            <div class="form-group">
-                <label>Ama (Toxin Accumulation)</label>
-                <textarea name="ama_assessment" rows="2" placeholder="e.g. Coated tongue, brain fog, joint stiffness…"></textarea>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lab Values -->
-    <div class="card" style="margin-bottom:1rem;">
-        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:0.25rem;">Lab Values</h2>
-        <p style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:1rem;">Optional — leave blank if not yet available.</p>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
-            <div class="form-group"><label>Total Cholesterol</label><input type="number" step="0.1" name="cholesterol_total" placeholder="mg/dL"></div>
-            <div class="form-group"><label>HDL</label><input type="number" step="0.1" name="hdl" placeholder="mg/dL"></div>
-            <div class="form-group"><label>LDL</label><input type="number" step="0.1" name="ldl" placeholder="mg/dL"></div>
-            <div class="form-group"><label>HbA1c</label><input type="number" step="0.01" name="hba1c" placeholder="%"></div>
-            <div class="form-group"><label>Creatinine</label><input type="number" step="0.01" name="creatinine" placeholder="mg/dL"></div>
-            <div class="form-group"><label>eGFR</label><input type="number" step="0.1" name="egfr" placeholder="mL/min"></div>
-            <div class="form-group"><label>Testosterone</label><input type="number" step="0.1" name="testosterone" placeholder="ng/dL"></div>
-            <div class="form-group"><label>TSH</label><input type="number" step="0.01" name="tsh" placeholder="mIU/L"></div>
-        </div>
-    </div>
-
-    <!-- Lifestyle -->
-    <div class="card" style="margin-bottom:1rem;">
-        <h2 style="font-size:0.9rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-secondary);margin-bottom:1rem;">Lifestyle</h2>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-            <div class="form-group" style="grid-column:1/-1;">
-                <label>Exercise Routine</label>
-                <textarea name="exercise_notes" rows="2" placeholder="e.g. Weight lifting 4x/week, limited cardio"></textarea>
-            </div>
-            <div class="form-group" style="grid-column:1/-1;">
-                <label>Diet Pattern</label>
-                <textarea name="diet_pattern" rows="2" placeholder="e.g. Primarily non-vegetarian, inconsistent meal timing"></textarea>
-            </div>
-            <div class="form-group"><label>Alcohol</label><input type="text" name="alcohol_notes" placeholder="e.g. Twice/month"></div>
-            <div class="form-group"><label>Caffeine / Nicotine</label><input type="text" name="caffeine_notes" placeholder="e.g. Occasional during heavy work"></div>
-        </div>
-    </div>
-
-    <div style="display:flex;gap:1rem;justify-content:flex-end;margin-bottom:2rem;">
-        <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary">Cancel</a>
-        <button type="submit" class="btn btn-primary">Save Patient</button>
-    </div>
+</div>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const DOSHA_COLORS = {
+    Vata:  { bg: '#ede9fe', color: '#5b21b6' },
+    Pitta: { bg: '#fef3c7', color: '#92400e' },
+    Kapha: { bg: '#d1fae5', color: '#065f46' },
+};
+
+function updatePreview() {
+    const first = document.getElementById('f_first').value.trim();
+    const last  = document.getElementById('f_last').value.trim();
+    const loc   = document.getElementById('f_location').value.trim();
+    const occ   = document.getElementById('f_occupation').value.trim();
+    const email = document.getElementById('f_email').value.trim();
+    const phone = document.getElementById('f_phone').value.trim();
+
+    // Name
+    const nameEl = document.getElementById('prev_name');
+    const subEl  = document.getElementById('prev_sub');
+    if (first || last) {
+        nameEl.textContent = [first, last].filter(Boolean).join(' ');
+        const parts = [loc, occ, email || phone].filter(Boolean);
+        subEl.textContent = parts.join(' · ') || '';
+    } else {
+        nameEl.textContent = '—';
+        subEl.textContent = 'Fill in contact details above';
+    }
+
+    // Doshas
+    const d1 = document.getElementById('f_dosha1').value;
+    const d2 = document.getElementById('f_dosha2').value;
+    const doshEl = document.getElementById('prev_doshas');
+    if (d1 || d2) {
+        doshEl.style.display = '';
+        doshEl.innerHTML = [d1, d2].filter(Boolean).map(d => {
+            const c = DOSHA_COLORS[d] || { bg: '#f1f5f9', color: '#334155' };
+            return `<span style="display:inline-flex;align-items:center;padding:0.2rem 0.65rem;border-radius:9999px;font-size:0.75rem;font-weight:700;background:${c.bg};color:${c.color};margin-right:4px;">${d}</span>`;
+        }).join('');
+    } else {
+        doshEl.style.display = 'none';
+    }
+
+    // Complaints
+    const comp = document.getElementById('f_complaints').value.trim();
+    const compWrap = document.getElementById('prev_complaints_wrap');
+    if (comp) {
+        compWrap.style.display = '';
+        document.getElementById('prev_complaints').textContent = comp.length > 120 ? comp.slice(0, 120) + '…' : comp;
+    } else {
+        compWrap.style.display = 'none';
+    }
+
+    // Labs
+    const labFields = [
+        { id: 'f_chol',  label: 'Cholesterol', unit: '' },
+        { id: 'f_hdl',   label: 'HDL', unit: '' },
+        { id: 'f_ldl',   label: 'LDL', unit: '' },
+        { id: 'f_hba1c', label: 'HbA1c', unit: '%' },
+    ];
+    const filledLabs = labFields.filter(f => document.getElementById(f.id).value);
+    const labsWrap = document.getElementById('prev_labs_wrap');
+    if (filledLabs.length) {
+        labsWrap.style.display = '';
+        document.getElementById('prev_labs').innerHTML = filledLabs.map(f => {
+            const v = document.getElementById(f.id).value;
+            return `<div style="background:#f8fafc;border-radius:7px;padding:0.4rem 0.5rem;text-align:center;">
+                <div style="font-size:0.68rem;color:var(--text-secondary);">${f.label}</div>
+                <div style="font-weight:700;font-size:0.9rem;">${v}${f.unit}</div>
+            </div>`;
+        }).join('');
+    } else {
+        labsWrap.style.display = 'none';
+    }
+
+    // Hide hint once something is filled
+    const hasContent = first || last || d1 || comp || filledLabs.length;
+    document.getElementById('prev_hint').style.display = hasContent ? 'none' : '';
+}
+</script>
 {% endblock %}
